@@ -10,8 +10,8 @@
 
 NSManagedObjectContext *createManagedObjectContext();
 void testManagedObjectCreationAndPropertyAndRelationship(NSManagedObjectContext *moc);
-ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
-ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc);
+ParentMO *newParentMONamedAndVerifyPropertyAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
+ChildMO *newChildMONamedAndVerifyProperty(NSString *n, NSManagedObjectContext *moc);
 void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children);
 void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc);
 void assertCanSave(NSManagedObjectContext *moc);
@@ -61,27 +61,29 @@ NSManagedObjectContext *createManagedObjectContext() {
 }
 
 void testManagedObjectCreationAndPropertyAndRelationship(NSManagedObjectContext *moc) {
-    ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
-    ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
+    ParentMO *homer = newParentMONamedAndVerifyPropertyAndAssertNoChildren(@"homer", moc);
+    ParentMO *marge = newParentMONamedAndVerifyPropertyAndAssertNoChildren(@"marge", moc);
     
-    ChildMO *bart = newChildMONamed(@"bart", moc);
-    ChildMO *lisa = newChildMONamed(@"lisa", moc);
+    ChildMO *bart = newChildMONamedAndVerifyProperty(@"bart", moc);
+    ChildMO *lisa = newChildMONamedAndVerifyProperty(@"lisa", moc);
     
     assertParentMOsCanHaveChildrenAdded(@[homer, marge], @[bart, lisa]);
 }
 
-ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc) {
+ParentMO *newParentMONamedAndVerifyPropertyAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc) {
     ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
     mo.humanName = mo.parentName = n;
     [mo setIvar:1.0];
+    NSCAssert([mo ivar] == 1.0, nil);
     NSCAssert([mo.children count] == 0, nil);
     return mo;
 }
 
-ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc) {
+ChildMO *newChildMONamedAndVerifyProperty(NSString *n, NSManagedObjectContext *moc) {
     ChildMO *mo = [ChildMO insertInManagedObjectContext:moc];
     mo.humanName = mo.childName = n;
     [mo setIvar:1.0];
+    NSCAssert([mo ivar] == 1.0, nil);
     return mo;
 }
 
