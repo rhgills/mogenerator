@@ -1,3 +1,19 @@
+task :default do
+  clean
+  build_mogen
+  
+  test_all
+end
+
+desc 'Clean output'
+task :clean do
+  clean
+end
+
+def clean
+  run_or_die 'rm -rf MOs testbin test.mom'
+end
+
 def run_or_die(cmd)
   #puts "*** #{cmd}"
   result = `#{cmd}`
@@ -5,12 +21,72 @@ def run_or_die(cmd)
   result
 end
 
-puts "*** Clean-building mogenerator"
-build_settings = run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -configuration Debug -showBuildSettings'
-built_products_dir = build_settings.lines.select{|line|line[/\sBUILT_PRODUCTS_DIR\s/]}[0].strip.sub('BUILT_PRODUCTS_DIR = ','')
-run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator clean' # need this to pick up template changes
-run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator'
-mogenPath = "#{built_products_dir}/mogenerator"
+def test_all
+  test_mrc
+  clean
+  
+  test_mrc_noliterals
+  clean
+  
+  test_arc
+  clean
+  
+  test_arc_noliterals
+  clean
+end
+
+desc 'Generate, Compile and Run MRC Code (with objc literals)'
+task :mrc => :build_mogen do
+  test_mrc
+end
+
+def test_mrc
+  gen_and_compile('MRC (with objc literals)', mogenPath, '', '')
+end
+
+desc 'Generate, Compile and Run MRC Code (without objc literals)'
+task :mrc_noliterals => :build_mogen  do
+  test_mrc_noliterals
+end
+
+def test_mrc_noliterals
+  gen_and_compile('MRC (without objc literals)', mogenPath, '--template-var noliterals=true', '')
+end
+
+desc 'Generate, Compile and Run ARC Code (with objc literals)'
+task :arc => :build_mogen  do
+  test_arc
+end
+
+def test_arc
+  gen_and_compile('ARC (with objc literals)', mogenPath, '--template-var arc=true', '-fobjc-arc')
+end
+
+desc 'Generate, Compile and Run ARC Code (without objc literals)'
+task :arc_noliterals => :build_mogen  do
+  test_arc_noliterals
+end
+
+def test_arc_noliterals
+  gen_and_compile('ARC (without objc literals)', mogenPath, '--template-var arc=true --template-var noliterals=true', '-fobjc-arc')
+end
+
+task :build_mogen do
+  build_mogen
+end
+
+def build_mogen
+  puts "*** Clean-building mogenerator"
+  build_settings = run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -configuration Debug -showBuildSettings'
+  built_products_dir = build_settings.lines.select{|line|line[/\sBUILT_PRODUCTS_DIR\s/]}[0].strip.sub('BUILT_PRODUCTS_DIR = ','')
+  run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator clean' # need this to pick up template changes
+  run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator'
+  @mogenPath = "#{built_products_dir}/mogenerator"
+end
+
+def mogenPath
+  @mogenPath
+end
 
 def gen_and_compile(desc, mogenPath, extra_mogen_args, extra_gcc_args)
   puts "*** Testing #{desc}"
@@ -20,45 +96,4 @@ def gen_and_compile(desc, mogenPath, extra_mogen_args, extra_gcc_args)
   run_or_die "clang -o testbin test.m MyBaseClass.m MOs/*.m -I#{Dir.pwd} -framework Foundation -framework Cocoa -framework CoreData #{extra_gcc_args}"
   run_or_die "xcrun momc -MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS test.xcdatamodel #{Dir.pwd}/test.mom"
   puts run_or_die './testbin'
-end
-
-desc 'Generate, Compile and Run MRC Code (with objc literals)'
-task :mrc do
-  gen_and_compile('MRC (with objc literals)', mogenPath, '', '')
-end
-
-desc 'Generate, Compile and Run MRC Code (without objc literals)'
-task :mrc_noliterals do
-  gen_and_compile('MRC (without objc literals)', mogenPath, '--template-var noliterals=true', '')
-end
-
-desc 'Generate, Compile and Run ARC Code (with objc literals)'
-task :arc do
-  gen_and_compile('ARC (with objc literals)', mogenPath, '--template-var arc=true', '-fobjc-arc')
-end
-
-desc 'Generate, Compile and Run ARC Code (without objc literals)'
-task :arc_noliterals do
-  gen_and_compile('ARC (without objc literals)', mogenPath, '--template-var arc=true --template-var noliterals=true', '-fobjc-arc')
-end
-
-desc 'Clean output'
-task :clean do
-  run_or_die 'rm -rf MOs testbin test.mom'
-end
-
-task :default do
-  Rake::Task[:clean].execute
-  
-  Rake::Task[:mrc].execute
-  Rake::Task[:clean].execute
-  
-  Rake::Task[:mrc_noliterals].execute
-  Rake::Task[:clean].execute
-  
-  Rake::Task[:arc].execute
-  Rake::Task[:clean].execute
-  
-  Rake::Task[:arc_noliterals].execute
-  Rake::Task[:clean].execute
 end

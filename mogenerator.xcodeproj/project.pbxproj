@@ -20,6 +20,7 @@
 		4BA3B1D71792380600EFEB83 /* NSString+CamelCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1D61792380600EFEB83 /* NSString+CamelCase.m */; };
 		4BA3B1DD1792387800EFEB83 /* MogeneratorTemplateDescription.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1DC1792387800EFEB83 /* MogeneratorTemplateDescription.m */; };
 		4BA3B1E1179238F700EFEB83 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1E0179238F700EFEB83 /* main.m */; };
+		4BA3B1E417923A5F00EFEB83 /* Version.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1E317923A5F00EFEB83 /* Version.m */; };
 		55200E960C49FEEA00018A42 /* DDCliApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E900C49FEEA00018A42 /* DDCliApplication.m */; };
 		55200E970C49FEEA00018A42 /* DDCliUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E920C49FEEA00018A42 /* DDCliUtil.m */; };
 		55200E980C49FEEA00018A42 /* DDGetoptLongParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E950C49FEEA00018A42 /* DDGetoptLongParser.m */; };
@@ -101,6 +102,8 @@
 		4BA3B1DB1792387800EFEB83 /* MogeneratorTemplateDescription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MogeneratorTemplateDescription.h; sourceTree = "<group>"; };
 		4BA3B1DC1792387800EFEB83 /* MogeneratorTemplateDescription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MogeneratorTemplateDescription.m; sourceTree = "<group>"; };
 		4BA3B1E0179238F700EFEB83 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = main.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
+		4BA3B1E217923A5F00EFEB83 /* Version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
+		4BA3B1E317923A5F00EFEB83 /* Version.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Version.m; sourceTree = "<group>"; };
 		55200E8F0C49FEEA00018A42 /* DDCliApplication.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = DDCliApplication.h; sourceTree = "<group>"; };
 		55200E900C49FEEA00018A42 /* DDCliApplication.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = DDCliApplication.m; sourceTree = "<group>"; };
 		55200E910C49FEEA00018A42 /* DDCliUtil.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = DDCliUtil.h; sourceTree = "<group>"; };
@@ -303,6 +306,8 @@
 			isa = PBXGroup;
 			children = (
 				4BA3B1E0179238F700EFEB83 /* main.m */,
+				4BA3B1E217923A5F00EFEB83 /* Version.h */,
+				4BA3B1E317923A5F00EFEB83 /* Version.m */,
 			);
 			path = "Other Sources";
 			sourceTree = "<group>";
@@ -478,6 +483,7 @@
 			files = (
 				8DD76F9A0486AA7600D96B5E /* MOGeneratorApp.m in Sources */,
 				79D2BFA20ACFB51A00F3F141 /* _MiscMergeBreakCommand.m in Sources */,
+				4BA3B1E417923A5F00EFEB83 /* Version.m in Sources */,
 				79D2BFA40ACFB51A00F3F141 /* _MiscMergeCallCommand.m in Sources */,
 				79D2BFA60ACFB51A00F3F141 /* _MiscMergeCommentCommand.m in Sources */,
 				79D2BFA80ACFB51A00F3F141 /* _MiscMergeContinueCommand.m in Sources */,

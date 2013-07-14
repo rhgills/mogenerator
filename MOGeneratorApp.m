@@ -15,6 +15,7 @@
 #import "nsenumerate.h"
 #import "NSString+MiscAdditions.h"
 #import "NSManagedObjectModel+entitiesWithACustomSubclassVerbose.h"
+#import "Version.h"
 
 static NSString * const kTemplateVar = @"TemplateVar";
 
@@ -52,41 +53,6 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
 - (void)dealloc {
     [templateVar release];
     [super dealloc];
-}
-
-NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
-- (MogeneratorTemplateDescription*)templateDescNamed:(NSString*)fileName_ {
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    BOOL isDirectory;
-    
-    if (templatePath) {
-        if ([fileManager fileExistsAtPath:templatePath isDirectory:&isDirectory] && isDirectory) {
-            return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_
-                                                             path:[templatePath stringByAppendingPathComponent:fileName_]] autorelease];
-        }
-    } else if (templateGroup) {
-        NSArray *appSupportDirectories = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask+NSLocalDomainMask, YES);
-        assert(appSupportDirectories);
-        
-        nsenumerate (appSupportDirectories, NSString*, appSupportDirectory) {
-            if ([fileManager fileExistsAtPath:appSupportDirectory isDirectory:&isDirectory]) {
-                NSString *appSupportSubdirectory = [appSupportDirectory stringByAppendingPathComponent:ApplicationSupportSubdirectoryName];
-                appSupportSubdirectory = [appSupportSubdirectory stringByAppendingPathComponent:templateGroup];
-                if ([fileManager fileExistsAtPath:appSupportSubdirectory isDirectory:&isDirectory] && isDirectory) {
-                    NSString *appSupportFile = [appSupportSubdirectory stringByAppendingPathComponent:fileName_];
-                    if ([fileManager fileExistsAtPath:appSupportFile isDirectory:&isDirectory] && !isDirectory) {
-                        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:appSupportFile] autorelease];
-                    }
-                }
-            }
-        }
-    } else {
-        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:nil] autorelease];
-    }
-    
-    ddprintf(@"templateDescNamed:@\"%@\": file not found", fileName_);
-    exit(EXIT_FAILURE);
-    return nil;
 }
 
 - (void)application:(DDCliApplication*)app
@@ -149,173 +115,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
            "Inspired by eogenerator.\n");
 }
 
-- (NSString*)xcodeSelectPrintPath {
-    NSString *result = @"";
-    
-    @try {
-        NSTask *task = [[[NSTask alloc] init] autorelease];
-        [task setLaunchPath:@"/usr/bin/xcode-select"];
-        
-        [task setArguments:[NSArray arrayWithObject:@"-print-path"]];
-        
-        NSPipe *pipe = [NSPipe pipe];
-        [task setStandardOutput:pipe];
-        //  Ensures that the current tasks output doesn't get hijacked
-        [task setStandardInput:[NSPipe pipe]];
-        
-        NSFileHandle *file = [pipe fileHandleForReading];
-        
-        [task launch];
-        
-        NSData *data = [file readDataToEndOfFile];
-        result = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
-        result = [result substringToIndex:[result length]-1]; // trim newline
-    } @catch(NSException *ex) {
-        ddprintf(@"WARNING couldn't launch /usr/bin/xcode-select\n");
-    }
-    
-    return result;
-}
 
-- (void)setModel:(NSString*)momOrXCDataModelFilePath {
-    assert(!model); // Currently we only can load one model.
-    
-    NSFileManager *fm = [NSFileManager defaultManager];
-    
-    if (![fm fileExistsAtPath:momOrXCDataModelFilePath]) {
-        NSString *reason = [NSString stringWithFormat:@"error loading file at %@: no such file exists", momOrXCDataModelFilePath];
-        DDCliParseException *e = [DDCliParseException parseExceptionWithReason:reason
-                                                                      exitCode:EX_NOINPUT];
-        @throw e;
-    }
-    
-    origModelBasePath = [momOrXCDataModelFilePath stringByDeletingLastPathComponent];
-    
-    // If given a data model bundle (.xcdatamodeld) file, assume its "current" data model file.
-    if ([[momOrXCDataModelFilePath pathExtension] isEqualToString:@"xcdatamodeld"]) {
-        // xcdatamodeld bundles have a ".xccurrentversion" plist file in them with a
-        // "_XCCurrentVersionName" key representing the current model's file name.
-        NSString *xccurrentversionPath = [momOrXCDataModelFilePath stringByAppendingPathComponent:@".xccurrentversion"];
-        if ([fm fileExistsAtPath:xccurrentversionPath]) {
-            NSDictionary *xccurrentversionPlist = [NSDictionary dictionaryWithContentsOfFile:xccurrentversionPath];
-            NSString *currentModelName = [xccurrentversionPlist objectForKey:@"_XCCurrentVersionName"];
-            if (currentModelName) {
-                momOrXCDataModelFilePath = [momOrXCDataModelFilePath stringByAppendingPathComponent:currentModelName];
-            }
-        }
-        else {
-            // Freshly created models with only one version do NOT have a .xccurrentversion file, but only have one model
-            // in them.  Use that model.
-            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"self endswith %@", @".xcdatamodel"];
-            NSArray *contents = [[fm contentsOfDirectoryAtPath:momOrXCDataModelFilePath error:nil]
-                                   filteredArrayUsingPredicate:predicate];
-            if (contents.count == 1) {
-                momOrXCDataModelFilePath = [momOrXCDataModelFilePath stringByAppendingPathComponent:[contents lastObject]];
-            }
-        }
-    }
-    
-    NSString *momFilePath = nil;
-    if ([[momOrXCDataModelFilePath pathExtension] isEqualToString:@"xcdatamodel"]) {
-        //  We've been handed a .xcdatamodel data model, transparently compile it into a .mom managed object model.
-        
-        NSString *momcTool = nil;
-        {{
-            if (NO && [fm fileExistsAtPath:@"/usr/bin/xcrun"]) {
-                // Cool, we can just use Xcode 3.2.6/4.x's xcrun command to find and execute momc for us.
-                momcTool = @"/usr/bin/xcrun momc";
-            } else {
-                // Rats, don't have xcrun. Hunt around for momc in various places where various versions of Xcode stashed it.
-                NSString *xcodeSelectMomcPath = [NSString stringWithFormat:@"%@/usr/bin/momc", [self xcodeSelectPrintPath]];
-                
-                if ([fm fileExistsAtPath:xcodeSelectMomcPath]) {
-                    momcTool = [NSString stringWithFormat:@"\"%@\"", xcodeSelectMomcPath]; // Quote for safety.
-                } else if ([fm fileExistsAtPath:@"/Applications/Xcode.app/Contents/Developer/usr/bin/momc"]) {
-                    // Xcode 4.3 - Command Line Tools for Xcode
-                    momcTool = @"/Applications/Xcode.app/Contents/Developer/usr/bin/momc";
-                } else if ([fm fileExistsAtPath:@"/Developer/usr/bin/momc"]) {
-                    // Xcode 3.1.
-                    momcTool = @"/Developer/usr/bin/momc";
-                } else if ([fm fileExistsAtPath:@"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc"]) {
-                    // Xcode 3.0.
-                    momcTool = @"\"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc\"";
-                } else if ([fm fileExistsAtPath:@"/Developer/Library/Xcode/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc"]) {
-                    // Xcode 2.4.
-                    momcTool = @"/Developer/Library/Xcode/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc";
-                }
-                assert(momcTool && "momc not found");
-            }
-        }}
-        
-        NSMutableString *momcOptions = [NSMutableString string];
-        {{
-            NSArray *supportedMomcOptions = [NSArray arrayWithObjects:
-                                             @"MOMC_NO_WARNINGS",
-                                             @"MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS",
-                                             @"MOMC_SUPPRESS_INVERSE_TRANSIENT_ERROR",
-                                             nil];
-            for (NSString *momcOption in supportedMomcOptions) {
-                if ([[[NSProcessInfo processInfo] environment] objectForKey:momcOption]) {
-                    [momcOptions appendFormat:@" -%@ ", momcOption];
-                }
-            }
-        }}
-        
-        NSString *momcIncantation = nil;
-        {{
-            NSString *tempGeneratedMomFileName = [[[NSProcessInfo processInfo] globallyUniqueString] stringByAppendingPathExtension:@"mom"];
-            tempGeneratedMomFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:tempGeneratedMomFileName];
-            momcIncantation = [NSString stringWithFormat:@"%@ %@ \"%@\" \"%@\"",
-                               momcTool,
-                               momcOptions,
-                               momOrXCDataModelFilePath,
-                               tempGeneratedMomFilePath];
-        }}
-        
-        {{
-            system([momcIncantation UTF8String]); // Ignore system() result since momc sadly doesn't return any relevent error codes.
-            momFilePath = tempGeneratedMomFilePath;
-        }}
-    } else {
-        momFilePath = momOrXCDataModelFilePath;
-    }
-    
-    model = [[[NSManagedObjectModel alloc] initWithContentsOfURL:[NSURL fileURLWithPath:momFilePath]] autorelease];
-    assert(model);
-}
-
-- (void)validateOutputPath:(NSString*)path forType:(NSString*)type
-{
-    //  Ignore nil ones
-    if (path == nil) {
-        return;
-    }
-    
-    NSString        *errorString = nil;
-    NSError         *error = nil;
-    NSFileManager   *fm = [NSFileManager defaultManager];
-    BOOL            isDir = NO;
-    
-    //  Test to see if the path exists
-    if ([fm fileExistsAtPath:path isDirectory:&isDir]) {
-        if (!isDir) {
-            errorString = [NSString stringWithFormat:@"%@ Directory path (%@) exists as a file.", type, path];
-        }
-    }
-    //  Try to create path
-    else {
-        if (![fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
-            errorString = [NSString stringWithFormat:@"Couldn't create %@ Directory (%@):%@", type, path, [error localizedDescription]];
-        }
-    }
-    
-    if (errorString != nil) {
-
-        //  Print error message and exit with IO error
-        ddprintf(errorString);
-        exit(EX_IOERR);
-    }
-}
 
 - (int)application:(DDCliApplication*)app runWithArguments:(NSArray*)arguments {
     if (_help) {
@@ -324,7 +124,7 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     }
     
     if (_version) {
-        printf("mogenerator 1.27. By Jonathan 'Wolf' Rentzsch + friends.\n");
+        ddprintf(@"mogenerator %@. By Jonathan 'Wolf' Rentzsch + friends.\n", CurrentVersion);
         return EXIT_SUCCESS;
     }
 
@@ -357,55 +157,12 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     NSFileManager *fm = [NSFileManager defaultManager];
     
     if (_orphaned) {
-        NSMutableDictionary *entityFilesByName = [NSMutableDictionary dictionary];
-        
-        NSArray *srcDirs = [NSArray arrayWithObjects:machineDir, humanDir, nil];
-        nsenumerate(srcDirs, NSString, srcDir) {
-            if (![srcDir length]) {
-                srcDir = [fm currentDirectoryPath];
-            }
-            nsenumerate([fm subpathsAtPath:srcDir], NSString, srcFileName) {
-                #define MANAGED_OBJECT_SOURCE_FILE_REGEX    @"_?([a-zA-Z0-9_]+MO).(h|m|mm)" // Sadly /^(*MO).(h|m|mm)$/ doesn't work.
-                if ([srcFileName isMatchedByRegex:MANAGED_OBJECT_SOURCE_FILE_REGEX]) {
-                    NSString *entityName = [[srcFileName captureComponentsMatchedByRegex:MANAGED_OBJECT_SOURCE_FILE_REGEX] objectAtIndex:1];
-                    if (![entityFilesByName objectForKey:entityName]) {
-                        [entityFilesByName setObject:[NSMutableSet set] forKey:entityName];
-                    }
-                    [[entityFilesByName objectForKey:entityName] addObject:srcFileName];
-                }
-            }
-        }
-        nsenumerate ([model entitiesWithACustomSubclassInConfiguration:configuration verbose:NO], NSEntityDescription, entity) {
-            [entityFilesByName removeObjectForKey:[entity managedObjectClassName]];
-        }
-        nsenumerate(entityFilesByName, NSSet, ophanedFiles) {
-            nsenumerate(ophanedFiles, NSString, ophanedFile) {
-                ddprintf(@"%@\n", ophanedFile);
-            }
-        }
-        
-        return EXIT_SUCCESS;
+        return [self listFilesWhoseEntitiesNoLongerExist];
     }
     
     if (templatePath) {
-        
-        NSString* absoluteTemplatePath = nil;
-        
-        if (![templatePath isAbsolutePath]) {
-            absoluteTemplatePath = [[origModelBasePath stringByAppendingPathComponent:templatePath] stringByStandardizingPath];
-            
-            // Be kind and try a relative Path of the parent xcdatamodeld folder of the model, if it exists
-            if ((![fm fileExistsAtPath:absoluteTemplatePath]) && ([[origModelBasePath pathExtension] isEqualToString:@"xcdatamodeld"])) {
-                absoluteTemplatePath = [[[origModelBasePath stringByDeletingLastPathComponent] stringByAppendingPathComponent:templatePath] stringByStandardizingPath];
-            }
-        } else {
-            absoluteTemplatePath = templatePath;
-        }
-
-        
-        // if the computed absoluteTemplatePath exists, use it.
-        if ([fm fileExistsAtPath:absoluteTemplatePath]) {
-            templatePath = absoluteTemplatePath;
+        if ([fm fileExistsAtPath:[self absoluteTemplatePath]]) {
+            templatePath = [self absoluteTemplatePath];
         }
     }
     
@@ -548,6 +305,262 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
     
     return EXIT_SUCCESS;
 }
+
+- (int)listFilesWhoseEntitiesNoLongerExist
+{
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSMutableDictionary *entityFilesByName = [NSMutableDictionary dictionary];
+    
+    NSArray *srcDirs = [NSArray arrayWithObjects:machineDir, humanDir, nil];
+    nsenumerate(srcDirs, NSString, srcDir) {
+        if (![srcDir length]) {
+            srcDir = [fm currentDirectoryPath];
+        }
+        nsenumerate([fm subpathsAtPath:srcDir], NSString, srcFileName) {
+#define MANAGED_OBJECT_SOURCE_FILE_REGEX    @"_?([a-zA-Z0-9_]+MO).(h|m|mm)" // Sadly /^(*MO).(h|m|mm)$/ doesn't work.
+            if ([srcFileName isMatchedByRegex:MANAGED_OBJECT_SOURCE_FILE_REGEX]) {
+                NSString *entityName = [[srcFileName captureComponentsMatchedByRegex:MANAGED_OBJECT_SOURCE_FILE_REGEX] objectAtIndex:1];
+                if (![entityFilesByName objectForKey:entityName]) {
+                    [entityFilesByName setObject:[NSMutableSet set] forKey:entityName];
+                }
+                [[entityFilesByName objectForKey:entityName] addObject:srcFileName];
+            }
+        }
+    }
+    nsenumerate ([model entitiesWithACustomSubclassInConfiguration:configuration verbose:NO], NSEntityDescription, entity) {
+        [entityFilesByName removeObjectForKey:[entity managedObjectClassName]];
+    }
+    nsenumerate(entityFilesByName, NSSet, ophanedFiles) {
+        nsenumerate(ophanedFiles, NSString, ophanedFile) {
+            ddprintf(@"%@\n", ophanedFile);
+        }
+    }
+    
+    return EXIT_SUCCESS;
+}
+
+- (NSString *)absoluteTemplatePath
+{
+    NSString* absoluteTemplatePath = nil;
+    
+    if (![templatePath isAbsolutePath]) {
+        absoluteTemplatePath = [[pathToFolderContainingModel stringByAppendingPathComponent:templatePath] stringByStandardizingPath];
+        
+        // Be kind and try a relative Path of the parent xcdatamodeld folder of the model, if it exists
+        if ((![[NSFileManager defaultManager] fileExistsAtPath:absoluteTemplatePath]) && ([[pathToFolderContainingModel pathExtension] isEqualToString:@"xcdatamodeld"])) {
+            absoluteTemplatePath = [[[pathToFolderContainingModel stringByDeletingLastPathComponent] stringByAppendingPathComponent:templatePath] stringByStandardizingPath];
+        }
+    } else {
+        absoluteTemplatePath = templatePath;
+    }
+    
+    return absoluteTemplatePath;
+}
+
+- (NSString*)xcodeSelectPrintPath {
+    NSString *result = @"";
+    
+    @try {
+        NSTask *task = [[[NSTask alloc] init] autorelease];
+        [task setLaunchPath:@"/usr/bin/xcode-select"];
+        
+        [task setArguments:[NSArray arrayWithObject:@"-print-path"]];
+        
+        NSPipe *pipe = [NSPipe pipe];
+        [task setStandardOutput:pipe];
+        //  Ensures that the current tasks output doesn't get hijacked
+        [task setStandardInput:[NSPipe pipe]];
+        
+        NSFileHandle *file = [pipe fileHandleForReading];
+        
+        [task launch];
+        
+        NSData *data = [file readDataToEndOfFile];
+        result = [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+        result = [result substringToIndex:[result length]-1]; // trim newline
+    } @catch(NSException *ex) {
+        ddprintf(@"WARNING couldn't launch /usr/bin/xcode-select\n");
+    }
+    
+    return result;
+}
+
+- (void)setModel:(NSString*)momOrXCDataModelFilePath {
+    assert(!model); // Currently we only can load one model.
+    
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    if (![fm fileExistsAtPath:momOrXCDataModelFilePath]) {
+        NSString *reason = [NSString stringWithFormat:@"error loading file at %@: no such file exists", momOrXCDataModelFilePath];
+        DDCliParseException *e = [DDCliParseException parseExceptionWithReason:reason
+                                                                      exitCode:EX_NOINPUT];
+        @throw e;
+    }
+    
+    pathToFolderContainingModel = [momOrXCDataModelFilePath stringByDeletingLastPathComponent];
+    
+    // If given a data model bundle (.xcdatamodeld) file, assume its "current" data model file.
+    if ([[momOrXCDataModelFilePath pathExtension] isEqualToString:@"xcdatamodeld"]) {
+        // xcdatamodeld bundles have a ".xccurrentversion" plist file in them with a
+        // "_XCCurrentVersionName" key representing the current model's file name.
+        NSString *xccurrentversionPath = [momOrXCDataModelFilePath stringByAppendingPathComponent:@".xccurrentversion"];
+        if ([fm fileExistsAtPath:xccurrentversionPath]) {
+            NSDictionary *xccurrentversionPlist = [NSDictionary dictionaryWithContentsOfFile:xccurrentversionPath];
+            NSString *currentModelName = [xccurrentversionPlist objectForKey:@"_XCCurrentVersionName"];
+            if (currentModelName) {
+                momOrXCDataModelFilePath = [momOrXCDataModelFilePath stringByAppendingPathComponent:currentModelName];
+            }
+        }
+        else {
+            // Freshly created models with only one version do NOT have a .xccurrentversion file, but only have one model
+            // in them.  Use that model.
+            NSPredicate *predicate = [NSPredicate predicateWithFormat:@"self endswith %@", @".xcdatamodel"];
+            NSArray *contents = [[fm contentsOfDirectoryAtPath:momOrXCDataModelFilePath error:nil]
+                                 filteredArrayUsingPredicate:predicate];
+            if (contents.count == 1) {
+                momOrXCDataModelFilePath = [momOrXCDataModelFilePath stringByAppendingPathComponent:[contents lastObject]];
+            }
+        }
+    }
+    
+    NSString *momFilePath = nil;
+    if ([[momOrXCDataModelFilePath pathExtension] isEqualToString:@"xcdatamodel"]) {
+        //  We've been handed a .xcdatamodel data model, transparently compile it into a .mom managed object model.
+        
+        NSString *momcTool = nil;
+        {{
+            if (NO && [fm fileExistsAtPath:@"/usr/bin/xcrun"]) {
+                // Cool, we can just use Xcode 3.2.6/4.x's xcrun command to find and execute momc for us.
+                momcTool = @"/usr/bin/xcrun momc";
+            } else {
+                // Rats, don't have xcrun. Hunt around for momc in various places where various versions of Xcode stashed it.
+                NSString *xcodeSelectMomcPath = [NSString stringWithFormat:@"%@/usr/bin/momc", [self xcodeSelectPrintPath]];
+                
+                if ([fm fileExistsAtPath:xcodeSelectMomcPath]) {
+                    momcTool = [NSString stringWithFormat:@"\"%@\"", xcodeSelectMomcPath]; // Quote for safety.
+                } else if ([fm fileExistsAtPath:@"/Applications/Xcode.app/Contents/Developer/usr/bin/momc"]) {
+                    // Xcode 4.3 - Command Line Tools for Xcode
+                    momcTool = @"/Applications/Xcode.app/Contents/Developer/usr/bin/momc";
+                } else if ([fm fileExistsAtPath:@"/Developer/usr/bin/momc"]) {
+                    // Xcode 3.1.
+                    momcTool = @"/Developer/usr/bin/momc";
+                } else if ([fm fileExistsAtPath:@"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc"]) {
+                    // Xcode 3.0.
+                    momcTool = @"\"/Library/Application Support/Apple/Developer Tools/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc\"";
+                } else if ([fm fileExistsAtPath:@"/Developer/Library/Xcode/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc"]) {
+                    // Xcode 2.4.
+                    momcTool = @"/Developer/Library/Xcode/Plug-ins/XDCoreDataModel.xdplugin/Contents/Resources/momc";
+                }
+                assert(momcTool && "momc not found");
+            }
+        }}
+        
+        NSMutableString *momcOptions = [NSMutableString string];
+        {{
+            NSArray *supportedMomcOptions = [NSArray arrayWithObjects:
+                                             @"MOMC_NO_WARNINGS",
+                                             @"MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS",
+                                             @"MOMC_SUPPRESS_INVERSE_TRANSIENT_ERROR",
+                                             nil];
+            for (NSString *momcOption in supportedMomcOptions) {
+                if ([[[NSProcessInfo processInfo] environment] objectForKey:momcOption]) {
+                    [momcOptions appendFormat:@" -%@ ", momcOption];
+                }
+            }
+        }}
+        
+        NSString *momcIncantation = nil;
+        {{
+            NSString *tempGeneratedMomFileName = [[[NSProcessInfo processInfo] globallyUniqueString] stringByAppendingPathExtension:@"mom"];
+            tempGeneratedMomFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:tempGeneratedMomFileName];
+            momcIncantation = [NSString stringWithFormat:@"%@ %@ \"%@\" \"%@\"",
+                               momcTool,
+                               momcOptions,
+                               momOrXCDataModelFilePath,
+                               tempGeneratedMomFilePath];
+        }}
+        
+        {{
+            system([momcIncantation UTF8String]); // Ignore system() result since momc sadly doesn't return any relevent error codes.
+            momFilePath = tempGeneratedMomFilePath;
+        }}
+    } else {
+        momFilePath = momOrXCDataModelFilePath;
+    }
+    
+    model = [[[NSManagedObjectModel alloc] initWithContentsOfURL:[NSURL fileURLWithPath:momFilePath]] autorelease];
+    assert(model);
+}
+
+- (void)validateOutputPath:(NSString*)path forType:(NSString*)type
+{
+    //  Ignore nil ones
+    if (path == nil) {
+        return;
+    }
+    
+    NSString        *errorString = nil;
+    NSError         *error = nil;
+    NSFileManager   *fm = [NSFileManager defaultManager];
+    BOOL            isDir = NO;
+    
+    //  Test to see if the path exists
+    if ([fm fileExistsAtPath:path isDirectory:&isDir]) {
+        if (!isDir) {
+            errorString = [NSString stringWithFormat:@"%@ Directory path (%@) exists as a file.", type, path];
+        }
+    }
+    //  Try to create path
+    else {
+        if (![fm createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error]) {
+            errorString = [NSString stringWithFormat:@"Couldn't create %@ Directory (%@):%@", type, path, [error localizedDescription]];
+        }
+    }
+    
+    if (errorString != nil) {
+        
+        //  Print error message and exit with IO error
+        ddprintf(errorString);
+        exit(EX_IOERR);
+    }
+}
+
+
+NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
+- (MogeneratorTemplateDescription*)templateDescNamed:(NSString*)fileName_ {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL isDirectory;
+    
+    if (templatePath) {
+        if ([fileManager fileExistsAtPath:templatePath isDirectory:&isDirectory] && isDirectory) {
+            return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_
+                                                                    path:[templatePath stringByAppendingPathComponent:fileName_]] autorelease];
+        }
+    } else if (templateGroup) {
+        NSArray *appSupportDirectories = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask+NSLocalDomainMask, YES);
+        assert(appSupportDirectories);
+        
+        nsenumerate (appSupportDirectories, NSString*, appSupportDirectory) {
+            if ([fileManager fileExistsAtPath:appSupportDirectory isDirectory:&isDirectory]) {
+                NSString *appSupportSubdirectory = [appSupportDirectory stringByAppendingPathComponent:ApplicationSupportSubdirectoryName];
+                appSupportSubdirectory = [appSupportSubdirectory stringByAppendingPathComponent:templateGroup];
+                if ([fileManager fileExistsAtPath:appSupportSubdirectory isDirectory:&isDirectory] && isDirectory) {
+                    NSString *appSupportFile = [appSupportSubdirectory stringByAppendingPathComponent:fileName_];
+                    if ([fileManager fileExistsAtPath:appSupportFile isDirectory:&isDirectory] && !isDirectory) {
+                        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:appSupportFile] autorelease];
+                    }
+                }
+            }
+        }
+    } else {
+        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:nil] autorelease];
+    }
+    
+    ddprintf(@"templateDescNamed:@\"%@\": file not found", fileName_);
+    exit(EXIT_FAILURE);
+    return nil;
+}
+
 
 @end
 
