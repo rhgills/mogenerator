@@ -10,6 +10,16 @@
 		457C26CD139A1EF900BF00DD /* MKCDAGNode.m in Sources */ = {isa = PBXBuildFile; fileRef = 457C26C8139A1EF900BF00DD /* MKCDAGNode.m */; };
 		457C26CE139A1EF900BF00DD /* MKCNSEntityDescriptionAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 457C26CA139A1EF900BF00DD /* MKCNSEntityDescriptionAdditions.m */; };
 		457C26CF139A1EF900BF00DD /* MKCNSManagedObjectModelAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 457C26CC139A1EF900BF00DD /* MKCNSManagedObjectModelAdditions.m */; };
+		4BA3B1C2179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1C1179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.m */; };
+		4BA3B1C5179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1C4179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.m */; };
+		4BA3B1C8179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1C7179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m */; };
+		4BA3B1CB1792364700EFEB83 /* NSEntityDescription+customBaseClass.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1CA1792364700EFEB83 /* NSEntityDescription+customBaseClass.m */; };
+		4BA3B1CE1792366C00EFEB83 /* Globals.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1CD1792366C00EFEB83 /* Globals.m */; };
+		4BA3B1D1179237AA00EFEB83 /* NSAttributeDescription+Typing.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1D0179237AA00EFEB83 /* NSAttributeDescription+Typing.m */; };
+		4BA3B1D4179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1D3179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.m */; };
+		4BA3B1D71792380600EFEB83 /* NSString+CamelCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1D61792380600EFEB83 /* NSString+CamelCase.m */; };
+		4BA3B1DD1792387800EFEB83 /* MogeneratorTemplateDescription.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1DC1792387800EFEB83 /* MogeneratorTemplateDescription.m */; };
+		4BA3B1E1179238F700EFEB83 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4BA3B1E0179238F700EFEB83 /* main.m */; };
 		55200E960C49FEEA00018A42 /* DDCliApplication.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E900C49FEEA00018A42 /* DDCliApplication.m */; };
 		55200E970C49FEEA00018A42 /* DDCliUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E920C49FEEA00018A42 /* DDCliUtil.m */; };
 		55200E980C49FEEA00018A42 /* DDGetoptLongParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 55200E950C49FEEA00018A42 /* DDGetoptLongParser.m */; };
@@ -57,12 +67,12 @@
 		79D2BFED0ACFB51A00F3F141 /* NSScanner+MiscMerge.m in Sources */ = {isa = PBXBuildFile; fileRef = 79D2BF9E0ACFB51A00F3F141 /* NSScanner+MiscMerge.m */; };
 		79D2BFEF0ACFB51A00F3F141 /* NSString+MiscAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 79D2BFA00ACFB51A00F3F141 /* NSString+MiscAdditions.m */; };
 		79D2C05A0ACFBCB500F3F141 /* FoundationAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 79D2C0580ACFBCB500F3F141 /* FoundationAdditions.m */; };
-		8DD76F9A0486AA7600D96B5E /* mogenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 08FB7796FE84155DC02AAC07 /* mogenerator.m */; settings = {ATTRIBUTES = (); }; };
+		8DD76F9A0486AA7600D96B5E /* MOGeneratorApp.m in Sources */ = {isa = PBXBuildFile; fileRef = 08FB7796FE84155DC02AAC07 /* MOGeneratorApp.m */; settings = {ATTRIBUTES = (); }; };
 		8DD76F9C0486AA7600D96B5E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 08FB779EFE84155DC02AAC07 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		08FB7796FE84155DC02AAC07 /* mogenerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = mogenerator.m; sourceTree = "<group>"; usesTabs = 0; };
+		08FB7796FE84155DC02AAC07 /* MOGeneratorApp.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = MOGeneratorApp.m; sourceTree = "<group>"; usesTabs = 0; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		08FB779EFE84155DC02AAC07 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32A70AAB03705E1F00C91783 /* mogenerator_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mogenerator_Prefix.pch; sourceTree = "<group>"; };
 		457C26C7139A1EF900BF00DD /* MKCDAGNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MKCDAGNode.h; sourceTree = "<group>"; };
@@ -71,6 +81,26 @@
 		457C26CA139A1EF900BF00DD /* MKCNSEntityDescriptionAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MKCNSEntityDescriptionAdditions.m; sourceTree = "<group>"; };
 		457C26CB139A1EF900BF00DD /* MKCNSManagedObjectModelAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MKCNSManagedObjectModelAdditions.h; sourceTree = "<group>"; };
 		457C26CC139A1EF900BF00DD /* MKCNSManagedObjectModelAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MKCNSManagedObjectModelAdditions.m; sourceTree = "<group>"; };
+		4BA3B1C0179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSEntityDescription+fetchedPropertiesAdditions.h"; sourceTree = "<group>"; };
+		4BA3B1C1179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSEntityDescription+fetchedPropertiesAdditions.m"; sourceTree = "<group>"; };
+		4BA3B1C3179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSEntityDescription+userInfoAdditions.h"; sourceTree = "<group>"; };
+		4BA3B1C4179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSEntityDescription+userInfoAdditions.m"; sourceTree = "<group>"; };
+		4BA3B1C6179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSManagedObjectModel+entitiesWithACustomSubclassVerbose.h"; sourceTree = "<group>"; };
+		4BA3B1C7179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m"; sourceTree = "<group>"; };
+		4BA3B1C91792364700EFEB83 /* NSEntityDescription+customBaseClass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSEntityDescription+customBaseClass.h"; sourceTree = "<group>"; };
+		4BA3B1CA1792364700EFEB83 /* NSEntityDescription+customBaseClass.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSEntityDescription+customBaseClass.m"; sourceTree = "<group>"; };
+		4BA3B1CC1792366C00EFEB83 /* Globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
+		4BA3B1CD1792366C00EFEB83 /* Globals.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Globals.m; sourceTree = "<group>"; };
+		4BA3B1CF179237AA00EFEB83 /* NSAttributeDescription+Typing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSAttributeDescription+Typing.h"; sourceTree = "<group>"; };
+		4BA3B1D0179237AA00EFEB83 /* NSAttributeDescription+Typing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSAttributeDescription+Typing.m"; sourceTree = "<group>"; };
+		4BA3B1D2179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSRelationshipDescription+CollectionClassName.h"; sourceTree = "<group>"; };
+		4BA3B1D3179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSRelationshipDescription+CollectionClassName.m"; sourceTree = "<group>"; };
+		4BA3B1D51792380600EFEB83 /* NSString+CamelCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+CamelCase.h"; sourceTree = "<group>"; };
+		4BA3B1D61792380600EFEB83 /* NSString+CamelCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+CamelCase.m"; sourceTree = "<group>"; };
+		4BA3B1D81792383C00EFEB83 /* NSObject+JustHereToSuppressIsOrderedNotImplementedCompilerWarning.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSObject+JustHereToSuppressIsOrderedNotImplementedCompilerWarning.h"; sourceTree = "<group>"; };
+		4BA3B1DB1792387800EFEB83 /* MogeneratorTemplateDescription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MogeneratorTemplateDescription.h; sourceTree = "<group>"; };
+		4BA3B1DC1792387800EFEB83 /* MogeneratorTemplateDescription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MogeneratorTemplateDescription.m; sourceTree = "<group>"; };
+		4BA3B1E0179238F700EFEB83 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = main.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		55200E8F0C49FEEA00018A42 /* DDCliApplication.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = DDCliApplication.h; sourceTree = "<group>"; };
 		55200E900C49FEEA00018A42 /* DDCliApplication.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = DDCliApplication.m; sourceTree = "<group>"; };
 		55200E910C49FEEA00018A42 /* DDCliUtil.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = DDCliUtil.h; sourceTree = "<group>"; };
@@ -83,7 +113,7 @@
 		7931E67710FE982500175784 /* libicucore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libicucore.dylib; path = usr/lib/libicucore.dylib; sourceTree = SDKROOT; };
 		7931E67910FE984F00175784 /* RegexKitLite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RegexKitLite.h; sourceTree = "<group>"; };
 		7931E67A10FE984F00175784 /* RegexKitLite.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RegexKitLite.m; sourceTree = "<group>"; };
-		79A586510E48E8B400474C35 /* mogenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mogenerator.h; sourceTree = "<group>"; usesTabs = 0; };
+		79A586510E48E8B400474C35 /* MOGeneratorApp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MOGeneratorApp.h; sourceTree = "<group>"; usesTabs = 0; };
 		79D2BF3E0ACFB25B00F3F141 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
 		79D2BF520ACFB51A00F3F141 /* _MiscMergeBreakCommand.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = _MiscMergeBreakCommand.h; path = ../MiscMerge/_MiscMergeBreakCommand.h; sourceTree = "<group>"; };
 		79D2BF530ACFB51A00F3F141 /* _MiscMergeBreakCommand.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = _MiscMergeBreakCommand.m; path = ../MiscMerge/_MiscMergeBreakCommand.m; sourceTree = "<group>"; };
@@ -200,8 +230,10 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				08FB7796FE84155DC02AAC07 /* mogenerator.m */,
-				79A586510E48E8B400474C35 /* mogenerator.h */,
+				4BA3B1BF179234C400EFEB83 /* Classes */,
+				4BA3B1DE179238EA00EFEB83 /* Other Sources */,
+				79A586510E48E8B400474C35 /* MOGeneratorApp.h */,
+				08FB7796FE84155DC02AAC07 /* MOGeneratorApp.m */,
 				79D2C00E0ACFB81200F3F141 /* nsenumerate.h */,
 				7931E67910FE984F00175784 /* RegexKitLite.h */,
 				7931E67A10FE984F00175784 /* RegexKitLite.m */,
@@ -239,6 +271,40 @@
 				457C26CC139A1EF900BF00DD /* MKCNSManagedObjectModelAdditions.m */,
 			);
 			path = ponso;
+			sourceTree = "<group>";
+		};
+		4BA3B1BF179234C400EFEB83 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				4BA3B1CC1792366C00EFEB83 /* Globals.h */,
+				4BA3B1CD1792366C00EFEB83 /* Globals.m */,
+				4BA3B1C0179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.h */,
+				4BA3B1C1179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.m */,
+				4BA3B1C3179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.h */,
+				4BA3B1C4179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.m */,
+				4BA3B1C91792364700EFEB83 /* NSEntityDescription+customBaseClass.h */,
+				4BA3B1CA1792364700EFEB83 /* NSEntityDescription+customBaseClass.m */,
+				4BA3B1C6179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.h */,
+				4BA3B1C7179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m */,
+				4BA3B1CF179237AA00EFEB83 /* NSAttributeDescription+Typing.h */,
+				4BA3B1D0179237AA00EFEB83 /* NSAttributeDescription+Typing.m */,
+				4BA3B1D2179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.h */,
+				4BA3B1D3179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.m */,
+				4BA3B1D51792380600EFEB83 /* NSString+CamelCase.h */,
+				4BA3B1D61792380600EFEB83 /* NSString+CamelCase.m */,
+				4BA3B1D81792383C00EFEB83 /* NSObject+JustHereToSuppressIsOrderedNotImplementedCompilerWarning.h */,
+				4BA3B1DB1792387800EFEB83 /* MogeneratorTemplateDescription.h */,
+				4BA3B1DC1792387800EFEB83 /* MogeneratorTemplateDescription.m */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+		4BA3B1DE179238EA00EFEB83 /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				4BA3B1E0179238F700EFEB83 /* main.m */,
+			);
+			path = "Other Sources";
 			sourceTree = "<group>";
 		};
 		55200E8E0C49FEEA00018A42 /* ddcli */ = {
@@ -371,6 +437,8 @@
 /* Begin PBXProject section */
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = 1DEB927808733DD40010E9CD /* Build configuration list for PBXProject "mogenerator" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
@@ -408,7 +476,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DD76F9A0486AA7600D96B5E /* mogenerator.m in Sources */,
+				8DD76F9A0486AA7600D96B5E /* MOGeneratorApp.m in Sources */,
 				79D2BFA20ACFB51A00F3F141 /* _MiscMergeBreakCommand.m in Sources */,
 				79D2BFA40ACFB51A00F3F141 /* _MiscMergeCallCommand.m in Sources */,
 				79D2BFA60ACFB51A00F3F141 /* _MiscMergeCommentCommand.m in Sources */,
@@ -417,14 +485,19 @@
 				79D2BFAC0ACFB51A00F3F141 /* _MiscMergeDateCommand.m in Sources */,
 				79D2BFAE0ACFB51A00F3F141 /* _MiscMergeDebugCommand.m in Sources */,
 				79D2BFB00ACFB51A00F3F141 /* _MiscMergeDelayedParseCommand.m in Sources */,
+				4BA3B1C2179234C400EFEB83 /* NSEntityDescription+fetchedPropertiesAdditions.m in Sources */,
 				79D2BFB20ACFB51A00F3F141 /* _MiscMergeElseCommand.m in Sources */,
 				79D2BFB40ACFB51A00F3F141 /* _MiscMergeElseifCommand.m in Sources */,
 				79D2BFB60ACFB51A00F3F141 /* _MiscMergeEndforeachCommand.m in Sources */,
 				79D2BFB80ACFB51A00F3F141 /* _MiscMergeEndifCommand.m in Sources */,
 				79D2BFBA0ACFB51A00F3F141 /* _MiscMergeEndloopCommand.m in Sources */,
+				4BA3B1E1179238F700EFEB83 /* main.m in Sources */,
+				4BA3B1D4179237E300EFEB83 /* NSRelationshipDescription+CollectionClassName.m in Sources */,
 				79D2BFBC0ACFB51A00F3F141 /* _MiscMergeEndprocedureCommand.m in Sources */,
 				79D2BFBE0ACFB51A00F3F141 /* _MiscMergeEndwhileCommand.m in Sources */,
+				4BA3B1DD1792387800EFEB83 /* MogeneratorTemplateDescription.m in Sources */,
 				79D2BFC00ACFB51A00F3F141 /* _MiscMergeFieldCommand.m in Sources */,
+				4BA3B1D1179237AA00EFEB83 /* NSAttributeDescription+Typing.m in Sources */,
 				79D2BFC20ACFB51A00F3F141 /* _MiscMergeForeachCommand.m in Sources */,
 				79D2BFC40ACFB51A00F3F141 /* _MiscMergeIdentifyCommand.m in Sources */,
 				79D2BFC60ACFB51A00F3F141 /* _MiscMergeIfCommand.m in Sources */,
@@ -432,9 +505,11 @@
 				79D2BFCA0ACFB51A00F3F141 /* _MiscMergeIndexCommand.m in Sources */,
 				79D2BFCC0ACFB51A00F3F141 /* _MiscMergeLoopCommand.m in Sources */,
 				79D2BFCE0ACFB51A00F3F141 /* _MiscMergeNextCommand.m in Sources */,
+				4BA3B1D71792380600EFEB83 /* NSString+CamelCase.m in Sources */,
 				79D2BFD00ACFB51A00F3F141 /* _MiscMergeOmitCommand.m in Sources */,
 				79D2BFD20ACFB51A00F3F141 /* _MiscMergeOptionCommand.m in Sources */,
 				79D2BFD40ACFB51A00F3F141 /* _MiscMergeProcedureCommand.m in Sources */,
+				4BA3B1CE1792366C00EFEB83 /* Globals.m in Sources */,
 				79D2BFD60ACFB51A00F3F141 /* _MiscMergeSetCommand.m in Sources */,
 				79D2BFD80ACFB51A00F3F141 /* _MiscMergeWhileCommand.m in Sources */,
 				79D2BFDA0ACFB51A00F3F141 /* KeyValue+MiscMerge.m in Sources */,
@@ -443,6 +518,8 @@
 				79D2BFE00ACFB51A00F3F141 /* MiscMergeDriver.m in Sources */,
 				79D2BFE20ACFB51A00F3F141 /* MiscMergeEngine.m in Sources */,
 				79D2BFE40ACFB51A00F3F141 /* MiscMergeExpression.m in Sources */,
+				4BA3B1CB1792364700EFEB83 /* NSEntityDescription+customBaseClass.m in Sources */,
+				4BA3B1C8179235F000EFEB83 /* NSManagedObjectModel+entitiesWithACustomSubclassVerbose.m in Sources */,
 				79D2BFE60ACFB51A00F3F141 /* MiscMergeFunctions.m in Sources */,
 				79D2BFE90ACFB51A00F3F141 /* MiscMergeTemplate.m in Sources */,
 				79D2BFEB0ACFB51A00F3F141 /* NSNull.m in Sources */,
@@ -450,6 +527,7 @@
 				79D2BFEF0ACFB51A00F3F141 /* NSString+MiscAdditions.m in Sources */,
 				79D2C05A0ACFBCB500F3F141 /* FoundationAdditions.m in Sources */,
 				55200E960C49FEEA00018A42 /* DDCliApplication.m in Sources */,
+				4BA3B1C5179235D500EFEB83 /* NSEntityDescription+userInfoAdditions.m in Sources */,
 				55200E970C49FEEA00018A42 /* DDCliUtil.m in Sources */,
 				55200E980C49FEEA00018A42 /* DDGetoptLongParser.m in Sources */,
 				55200F9D0C4A2CA800018A42 /* DDCliParseException.m in Sources */,

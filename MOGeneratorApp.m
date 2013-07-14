@@ -3,517 +3,24 @@
 //   Some rights reserved: http://opensource.org/licenses/mit
 //   http://github.com/rentzsch/mogenerator
 
-#import "mogenerator.h"
+#import "MOGeneratorApp.h"
 #import "RegexKitLite.h"
+#import "Globals.h"
+#import "MogeneratorTemplateDescription.h"
+#import <CoreData/CoreData.h>
+#import "MiscMergeTemplate.h"
+#import "MiscMergeCommandBlock.h"
+#import "MiscMergeEngine.h"
+#import "FoundationAdditions.h"
+#import "nsenumerate.h"
+#import "NSString+MiscAdditions.h"
+#import "NSManagedObjectModel+entitiesWithACustomSubclassVerbose.h"
 
 static NSString * const kTemplateVar = @"TemplateVar";
-NSString  *gCustomBaseClass;
-NSString  *gCustomBaseClassImport;
-NSString  *gCustomBaseClassForced;
-
-@interface NSEntityDescription (fetchedPropertiesAdditions)
-- (NSDictionary*)fetchedPropertiesByName;
-@end
-
-@implementation NSEntityDescription (fetchedPropertiesAdditions)
-- (NSDictionary*)fetchedPropertiesByName {
-    NSMutableDictionary *fetchedPropertiesByName = [NSMutableDictionary dictionary];
-    
-    nsenumerate ([self properties], NSPropertyDescription, property) {
-        if ([property isKindOfClass:[NSFetchedPropertyDescription class]]) {
-            [fetchedPropertiesByName setObject:property forKey:[property name]];
-        }
-    }
-    
-    return fetchedPropertiesByName;
-}
-@end
-
-@interface NSEntityDescription (userInfoAdditions)
-- (BOOL)hasUserInfoKeys;
-- (NSDictionary *)userInfoByKeys;
-@end
-
-@implementation NSEntityDescription (userInfoAdditions)
-- (BOOL)hasUserInfoKeys {
-	return ([self.userInfo count] > 0);
-}
-
-- (NSDictionary *)userInfoByKeys
-{
-	NSMutableDictionary *userInfoByKeys = [NSMutableDictionary dictionary];
-
-	for (NSString *key in self.userInfo)
-		[userInfoByKeys setObject:[NSDictionary dictionaryWithObjectsAndKeys:key, @"key", [self.userInfo objectForKey:key], @"value", nil] forKey:key];
-
-	return userInfoByKeys;
-}
-@end
-
-@implementation NSManagedObjectModel (entitiesWithACustomSubclassVerbose)
-- (NSArray*)entitiesWithACustomSubclassInConfiguration:(NSString*)configuration_ verbose:(BOOL)verbose_ {
-    NSMutableArray *result = [NSMutableArray array];
-    NSArray* allEntities = nil;
-    
-    if (nil == configuration_) {
-        allEntities = [self entities];
-    }
-    else if (NSNotFound != [[self configurations] indexOfObject:configuration_]){
-        allEntities = [self entitiesForConfiguration:configuration_];
-    }
-    else {
-        if (verbose_){
-            ddprintf(@"No configuration %@ found in model. No files will be generated.\n(model configurations: %@)\n", configuration_, [self configurations]);
-        }
-        return nil;
-    }
-    
-    if (verbose_ && [allEntities count] == 0){
-        ddprintf(@"No entities found in model (or in specified configuration). No files will be generated.\n(model description: %@)\n", self);
-    }
-    
-    nsenumerate (allEntities, NSEntityDescription, entity) {
-        NSString *entityClassName = [entity managedObjectClassName];
-        
-        if ([entity hasCustomClass]){
-            [result addObject:entity];
-        } else {
-            if (verbose_) {
-                ddprintf(@"skipping entity %@ (%@) because it doesn't use a custom subclass.\n", 
-                         entity.name, entityClassName);
-            }
-        }
-    }
-    
-    return [result sortedArrayUsingDescriptors:[NSArray arrayWithObject:[[[NSSortDescriptor alloc] initWithKey:@"managedObjectClassName"
-                                                                                                     ascending:YES] autorelease]]];
-}
-@end
 
 
-@implementation NSEntityDescription (customBaseClass)
-- (BOOL)hasCustomBaseCaseImport {
-    return gCustomBaseClassImport == nil ? NO : YES;
-}
-- (NSString*)baseClassImport {
-    return gCustomBaseClassImport;
-}
 
-- (BOOL)hasCustomClass {
-    NSString *entityClassName = [self managedObjectClassName];
-    BOOL result = !([entityClassName isEqualToString:@"NSManagedObject"]
-        || [entityClassName isEqualToString:@""]
-        || [entityClassName isEqualToString:gCustomBaseClass]);
-    return result;
-}
-
-- (BOOL)hasSuperentity {
-    NSEntityDescription *superentity = [self superentity];
-    if (superentity) {
-        return YES;
-    }
-    return NO;
-}
-
-- (BOOL)hasCustomSuperentity {
-    NSString *forcedBaseClass = [self forcedCustomBaseClass];
-    if (!forcedBaseClass) {
-        NSEntityDescription *superentity = [self superentity];
-        if (superentity) {
-            return [superentity hasCustomClass] ? YES : NO;
-        } else {
-            return gCustomBaseClass ? YES : NO;
-        }
-    } else {
-        return YES;
-    }
-}
-
-- (NSString*)customSuperentity {
-    NSString *forcedBaseClass = [self forcedCustomBaseClass];
-    if (!forcedBaseClass) {
-        NSEntityDescription *superentity = [self superentity];
-        if (superentity) {
-            return [superentity managedObjectClassName];
-        } else {
-            return gCustomBaseClass ? gCustomBaseClass : @"NSManagedObject";
-        }
-    } else {
-        return forcedBaseClass;
-    }
-}
-- (NSString*)forcedCustomBaseClass {
-    NSString* userInfoCustomBaseClass = [[self userInfo] objectForKey:@"mogenerator.customBaseClass"];
-    return userInfoCustomBaseClass ? userInfoCustomBaseClass : gCustomBaseClassForced;
-}
-/** @TypeInfo NSAttributeDescription */
-- (NSArray*)noninheritedAttributes {
-    NSArray *sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]];
-    NSEntityDescription *superentity = [self superentity];
-    if (superentity) {
-        NSMutableArray *result = [[[[self attributesByName] allValues] mutableCopy] autorelease];
-        [result removeObjectsInArray:[[superentity attributesByName] allValues]];
-        return [result sortedArrayUsingDescriptors:sortDescriptors];
-    } else {
-        return [[[self attributesByName] allValues] sortedArrayUsingDescriptors:sortDescriptors];
-    }
-}
-/** @TypeInfo NSAttributeDescription */
-- (NSArray*)noninheritedAttributesSansType {
-    NSArray *attributeDescriptions = [self noninheritedAttributes];
-    NSMutableArray *filteredAttributeDescriptions = [NSMutableArray arrayWithCapacity:[attributeDescriptions count]];
-    
-    nsenumerate(attributeDescriptions, NSAttributeDescription, attributeDescription) {
-        if ([[attributeDescription name] isEqualToString:@"type"]) {
-            ddprintf(@"WARNING skipping 'type' attribute on %@ (%@) - see https://github.com/rentzsch/mogenerator/issues/74\n",
-                     self.name, self.managedObjectClassName);
-        } else {
-            [filteredAttributeDescriptions addObject:attributeDescription];
-        }
-    }
-    return filteredAttributeDescriptions;
-}
-/** @TypeInfo NSAttributeDescription */
-- (NSArray*)noninheritedRelationships {
-    NSArray *sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]];
-    NSEntityDescription *superentity = [self superentity];
-    if (superentity) {
-        NSMutableArray *result = [[[[self relationshipsByName] allValues] mutableCopy] autorelease];
-        [result removeObjectsInArray:[[superentity relationshipsByName] allValues]];
-        return [result sortedArrayUsingDescriptors:sortDescriptors];
-    } else {
-        return [[[self relationshipsByName] allValues] sortedArrayUsingDescriptors:sortDescriptors];
-    }
-}
-/** @TypeInfo NSEntityUserInfoDescription */
-- (NSArray*)userInfoKeyValues {
-	NSArray *sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"key" ascending:YES]];
-	NSEntityDescription *superentity = [self superentity];
-	if (superentity) {
-		NSMutableArray *result = [[[[self userInfoByKeys] allValues] mutableCopy] autorelease];
-		[result removeObjectsInArray:[[superentity userInfoByKeys] allValues]];
-		return [result sortedArrayUsingDescriptors:sortDescriptors];
-	} else {
-		return [[[self userInfoByKeys] allValues] sortedArrayUsingDescriptors:sortDescriptors];
-	}
-}
-/** @TypeInfo NSFetchedPropertyDescription */
-- (NSArray*)noninheritedFetchedProperties {
-    NSArray *sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]];
-    NSEntityDescription *superentity = [self superentity];
-    if (superentity) {
-        NSMutableArray *result = [[[[self fetchedPropertiesByName] allValues] mutableCopy] autorelease];
-        [result removeObjectsInArray:[[superentity fetchedPropertiesByName] allValues]];
-        return [result sortedArrayUsingDescriptors:sortDescriptors];
-    } else {
-        return [[[self fetchedPropertiesByName] allValues]  sortedArrayUsingDescriptors:sortDescriptors];
-    }
-}
-/** @TypeInfo NSAttributeDescription */
-- (NSArray*)indexedNoninheritedAttributes {
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isIndexed == YES"];
-    return [[self noninheritedAttributes] filteredArrayUsingPredicate:predicate];
-}
-
-#pragma mark Fetch Request support
-
-- (NSDictionary*)fetchRequestTemplates {
-    // -[NSManagedObjectModel _fetchRequestTemplatesByName] is a private method, but it's the only way to get
-    //  model fetch request templates without knowing their name ahead of time. rdar://problem/4901396 asks for
-    //  a public method (-[NSManagedObjectModel fetchRequestTemplatesByName]) that does the same thing.
-    //  If that request is fulfilled, this code won't need to be modified thanks to KVC lookup order magic.
-    //  UPDATE: 10.5 now has a public -fetchRequestTemplatesByName method.
-    NSDictionary *fetchRequests = [[self managedObjectModel] valueForKey:@"fetchRequestTemplatesByName"];
-    
-    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:[fetchRequests count]];
-    nsenumerate ([fetchRequests allKeys], NSString, fetchRequestName) {
-        NSFetchRequest *fetchRequest = [fetchRequests objectForKey:fetchRequestName];
-        if ([fetchRequest entity] == self) {
-            [result setObject:fetchRequest forKey:fetchRequestName];
-        }
-    }
-    return result;
-}
-
-- (NSString*)_resolveKeyPathType:(NSString*)keyPath {
-    NSArray *components = [keyPath componentsSeparatedByString:@"."];
-
-    // Hope the set of keys in the key path consists of solely relationships. Abort otherwise
-    
-    NSEntityDescription *entity = self;
-    nsenumerate(components, NSString, key) {
-        id property = [[entity propertiesByName] objectForKey:key];
-        if ([property isKindOfClass:[NSAttributeDescription class]]) {
-            NSString *result = [property objectAttributeType];
-            return [result substringToIndex:[result length] -1];
-        } else if ([property isKindOfClass:[NSRelationshipDescription class]]) {
-            entity = [property destinationEntity];
-        }
-        assert(property);
-    }
-    
-    return [entity managedObjectClassName];
-}
-
-// auxiliary function
-- (BOOL)bindingsArray:(NSArray*)bindings containsVariableNamed:(NSString*)name {
-    for (NSDictionary *dict in bindings) {
-        if ([[dict objectForKey:@"name"] isEqual:name]) {
-            return YES;
-        }
-    }
-    return NO;
-}
-
-- (void)_processPredicate:(NSPredicate*)predicate_ bindings:(NSMutableArray*)bindings_ {
-    if (!predicate_) return;
-    
-    if ([predicate_ isKindOfClass:[NSCompoundPredicate class]]) {
-        nsenumerate([(NSCompoundPredicate*)predicate_ subpredicates], NSPredicate, subpredicate) {
-            [self _processPredicate:subpredicate bindings:bindings_];
-        }
-    } else if ([predicate_ isKindOfClass:[NSComparisonPredicate class]]) {
-        assert([[(NSComparisonPredicate*)predicate_ leftExpression] expressionType] == NSKeyPathExpressionType);
-        NSExpression *lhs = [(NSComparisonPredicate*)predicate_ leftExpression];
-        NSExpression *rhs = [(NSComparisonPredicate*)predicate_ rightExpression];
-        switch([rhs expressionType]) {
-            case NSConstantValueExpressionType:
-            case NSEvaluatedObjectExpressionType:
-            case NSKeyPathExpressionType:
-            case NSFunctionExpressionType:
-                //  Don't do anything with these.
-                break;
-            case NSVariableExpressionType: {
-                // TODO SHOULD Handle LHS keypaths.
-                
-                NSString *type = nil;
-                
-                NSAttributeDescription *attribute = [[self attributesByName] objectForKey:[lhs keyPath]];
-                if (attribute) {
-                    type = [attribute objectAttributeClassName];
-                } else {
-                    type = [self _resolveKeyPathType:[lhs keyPath]];
-                }
-                type = [type stringByAppendingString:@"*"];
-                // make sure that no repeated variables are entered here.
-                if (![self bindingsArray:bindings_ containsVariableNamed:[rhs variable]]) {
-                    [bindings_ addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-                                      [rhs variable], @"name",
-                                      type, @"type",
-                                      nil]];
-                }
-            } break;
-            default:
-                assert(0 && "unknown NSExpression type");
-        }
-    }
-}
-- (NSArray*)prettyFetchRequests {
-    NSDictionary *fetchRequests = [self fetchRequestTemplates];
-    NSMutableArray *result = [NSMutableArray arrayWithCapacity:[fetchRequests count]];
-    nsenumerate ([fetchRequests allKeys], NSString, fetchRequestName) {
-        NSFetchRequest *fetchRequest = [fetchRequests objectForKey:fetchRequestName];
-        NSMutableArray *bindings = [NSMutableArray array];
-        [self _processPredicate:[fetchRequest predicate] bindings:bindings];
-        [result addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-                           fetchRequestName, @"name",
-                           bindings, @"bindings",
-                           [NSNumber numberWithBool:[bindings count] > 0], @"hasBindings",
-                           [NSNumber numberWithBool:[fetchRequestName hasPrefix:@"one"]], @"singleResult",
-                           nil]];
-    }
-    return result;
-}
-@end
-
-@implementation NSAttributeDescription (typing)
-- (BOOL)hasScalarAttributeType {
-    switch ([self attributeType]) {
-        case NSInteger16AttributeType:
-        case NSInteger32AttributeType:
-        case NSInteger64AttributeType:
-        case NSDoubleAttributeType:
-        case NSFloatAttributeType:
-        case NSBooleanAttributeType:
-            return YES;
-            break;
-        default:
-            return NO;
-    }
-}
-- (NSString*)scalarAttributeType {
-    switch ([self attributeType]) {
-        case NSInteger16AttributeType:
-            return @"int16_t";
-            break;
-        case NSInteger32AttributeType:
-            return @"int32_t";
-            break;
-        case NSInteger64AttributeType:
-            return @"int64_t";
-            break;
-        case NSDoubleAttributeType:
-            return @"double";
-            break;
-        case NSFloatAttributeType:
-            return @"float";
-            break;
-        case NSBooleanAttributeType:
-            return @"BOOL";
-            break;
-        default:
-            return nil;
-    }
-}
-- (NSString*)scalarAccessorMethodName {
-    switch ([self attributeType]) {
-        case NSInteger16AttributeType:
-            return @"shortValue";
-            break;
-        case NSInteger32AttributeType:
-            return @"intValue";
-            break;
-        case NSInteger64AttributeType:
-            return @"longLongValue";
-            break;
-        case NSDoubleAttributeType:
-            return @"doubleValue";
-            break;
-        case NSFloatAttributeType:
-            return @"floatValue";
-            break;
-        case NSBooleanAttributeType:
-            return @"boolValue";
-            break;
-        default:
-            return nil;
-    }
-}
-- (NSString*)scalarFactoryMethodName {
-    switch ([self attributeType]) {
-        case NSInteger16AttributeType:
-            return @"numberWithShort:";
-            break;
-        case NSInteger32AttributeType:
-            return @"numberWithInt:";
-            break;
-        case NSInteger64AttributeType:
-            return @"numberWithLongLong:";
-            break;
-        case NSDoubleAttributeType:
-            return @"numberWithDouble:";
-            break;
-        case NSFloatAttributeType:
-            return @"numberWithFloat:";
-            break;
-        case NSBooleanAttributeType:
-            return @"numberWithBool:";
-            break;
-        default:
-            return nil;
-    }
-}
-- (BOOL)hasDefinedAttributeType {
-    return [self attributeType] != NSUndefinedAttributeType;
-}
-- (NSString*)objectAttributeClassName {
-    NSString *result = nil;
-    if ([self hasTransformableAttributeType]) {
-        result = [[self userInfo] objectForKey:@"attributeValueClassName"];
-        if (!result) {
-            result = @"NSObject";
-        }
-    } else {
-        result = [self attributeValueClassName];
-    }
-    return result;
-}
-- (NSArray*)objectAttributeTransformableProtocols {
-    if ([self hasAttributeTransformableProtocols]) {
-        NSString *protocolsString = [[self userInfo] objectForKey:@"attributeTransformableProtocols"];
-        NSCharacterSet *removeCharSet = [NSCharacterSet characterSetWithCharactersInString:@", "];
-        NSMutableArray *protocols = [NSMutableArray arrayWithArray:[protocolsString componentsSeparatedByCharactersInSet:removeCharSet]];
-        [protocols removeObject:@""];
-        return protocols;
-    }
-    return nil;
-}
-- (BOOL)hasAttributeTransformableProtocols {
-    return [self hasTransformableAttributeType] && [[self userInfo] objectForKey:@"attributeTransformableProtocols"];
-}
-- (NSString*)objectAttributeType {
-    NSString *result = [self objectAttributeClassName];
-    if ([result isEqualToString:@"Class"]) {
-        // `Class` (don't append asterisk).
-    } else if ([result rangeOfString:@"<"].location != NSNotFound) {
-        // `id<Protocol1,Protocol2>` (don't append asterisk).
-    } else if ([result isEqualToString:@"NSObject"]) {
-        result = @"id";
-    } else {
-        result = [result stringByAppendingString:@"*"]; // Make it a pointer.
-    }
-    return result;
-}
-- (BOOL)hasTransformableAttributeType {
-    return ([self attributeType] == NSTransformableAttributeType);
-}
-
-- (BOOL)isReadonly {
-    NSString *readonlyUserinfoValue = [[self userInfo] objectForKey:@"mogenerator.readonly"];
-    if (readonlyUserinfoValue != nil) {
-        return YES;
-    }
-    return NO;
-}
-
-@end
-
-@implementation NSRelationshipDescription (collectionClassName)
-
-- (NSString*)mutableCollectionClassName {
-    return [self jr_isOrdered] ? @"NSMutableOrderedSet" : @"NSMutableSet";
-}
-
-- (NSString*)immutableCollectionClassName {
-    return [self jr_isOrdered] ? @"NSOrderedSet" : @"NSSet";
-}
-
-- (BOOL)jr_isOrdered {
-    if ([self respondsToSelector:@selector(isOrdered)]) {
-        return [self isOrdered];
-    } else {
-        return NO;
-    }
-}
-
-@end
-
-@implementation NSString (camelCaseString)
-- (NSString*)camelCaseString {
-    NSArray *lowerCasedWordArray = [[self wordArray] arrayByMakingObjectsPerformSelector:@selector(lowercaseString)];
-    NSUInteger wordIndex = 1, wordCount = [lowerCasedWordArray count];
-    NSMutableArray *camelCasedWordArray = [NSMutableArray arrayWithCapacity:wordCount];
-    if (wordCount)
-        [camelCasedWordArray addObject:[lowerCasedWordArray objectAtIndex:0]];
-    for (; wordIndex < wordCount; wordIndex++) {
-        [camelCasedWordArray addObject:[[lowerCasedWordArray objectAtIndex:wordIndex] initialCapitalString]];
-    }
-    return [camelCasedWordArray componentsJoinedByString:@""];
-}
-@end
-
-@interface MogeneratorTemplateDesc : NSObject {
-    NSString *templateName;
-    NSString *templatePath;
-}
-- (id)initWithName:(NSString*)name_ path:(NSString*)path_;
-- (NSString*)templateName;
-- (void)setTemplateName:(NSString*)name_;
-- (NSString*)templatePath;
-- (void)setTemplatePath:(NSString*)path_;
-@end
-
-static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDesc *templateDesc_) {
+static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *templateDesc_) {
     MiscMergeTemplate *template = [[[MiscMergeTemplate alloc] init] autorelease];
     [template setStartDelimiter:@"<$" endDelimiter:@"$>"];
     if ([templateDesc_ templatePath]) {
@@ -528,6 +35,9 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDesc *template
     
     return [[[MiscMergeEngine alloc] initWithTemplate:template] autorelease];
 }
+
+
+
 
 @implementation MOGeneratorApp
 
@@ -545,13 +55,13 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDesc *template
 }
 
 NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
-- (MogeneratorTemplateDesc*)templateDescNamed:(NSString*)fileName_ {
+- (MogeneratorTemplateDescription*)templateDescNamed:(NSString*)fileName_ {
     NSFileManager *fileManager = [NSFileManager defaultManager];
     BOOL isDirectory;
     
     if (templatePath) {
         if ([fileManager fileExistsAtPath:templatePath isDirectory:&isDirectory] && isDirectory) {
-            return [[[MogeneratorTemplateDesc alloc] initWithName:fileName_
+            return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_
                                                              path:[templatePath stringByAppendingPathComponent:fileName_]] autorelease];
         }
     } else if (templateGroup) {
@@ -565,13 +75,13 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
                 if ([fileManager fileExistsAtPath:appSupportSubdirectory isDirectory:&isDirectory] && isDirectory) {
                     NSString *appSupportFile = [appSupportSubdirectory stringByAppendingPathComponent:fileName_];
                     if ([fileManager fileExistsAtPath:appSupportFile isDirectory:&isDirectory] && !isDirectory) {
-                        return [[[MogeneratorTemplateDesc alloc] initWithName:fileName_ path:appSupportFile] autorelease];
+                        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:appSupportFile] autorelease];
                     }
                 }
             }
         }
     } else {
-        return [[[MogeneratorTemplateDesc alloc] initWithName:fileName_ path:nil] autorelease];
+        return [[[MogeneratorTemplateDescription alloc] initWithName:fileName_ path:nil] autorelease];
     }
     
     ddprintf(@"templateDescNamed:@\"%@\": file not found", fileName_);
@@ -1041,47 +551,6 @@ NSString *ApplicationSupportSubdirectoryName = @"mogenerator";
 
 @end
 
-@implementation MogeneratorTemplateDesc
 
-- (id)initWithName:(NSString*)name_ path:(NSString*)path_ {
-    self = [super init];
-    if (self) {
-        templateName = [name_ retain];
-        templatePath = [path_ retain];
-    }
-    return self;
-}
 
-- (void)dealloc {
-    [templateName release];
-    [templatePath release];
-    [super dealloc];
-}
 
-- (NSString*)templateName {
-    return templateName;
-}
-
-- (void)setTemplateName:(NSString*)name_ {
-    if (templateName != name_) {
-        [templateName release];
-        templateName = [name_ retain];
-    }
-}
-
-- (NSString*)templatePath {
-    return templatePath;
-}
-
-- (void)setTemplatePath:(NSString*)path_ {
-    if (templatePath != path_) {
-        [templatePath release];
-        templatePath = [path_ retain];
-    }
-}
-
-@end
-
-int main(int argc, char * const * argv) {
-    return DDCliAppRunWithClass([MOGeneratorApp class]);
-}
