@@ -8,13 +8,15 @@
     #define autorelease self
 #endif
 
+NSManagedObjectContext *createManagedObjectContext();
 void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc);
-void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc);
-void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children);
 ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
 ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc);
-NSManagedObjectContext *createManagedObjectContext();
+void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children);
+void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc);
 void assertCanSave(NSManagedObjectContext *moc);
+
+
 
 int main(int argc, char *argv[]) {
     @autoreleasepool {
@@ -28,45 +30,8 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc) {
-    ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
-    ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
-    
-    ChildMO *bart = newChildMONamed(@"bart", moc);
-    ChildMO *lisa = newChildMONamed(@"lisa", moc);
-    
-    assertParentMOsCanHaveChildrenAdded(@[homer, marge], @[bart, lisa]);
-}
 
-void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc) {
-    ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
-    protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
-}
 
-void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children) {
-    for (ParentMO *aParent in parents) {
-        for (ChildMO *aChild in children) {
-            [aParent addChildrenObject:aChild];
-        }
-        
-        NSCAssert([aParent.children count] == 2, nil);
-    }
-}
-
-ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc) {
-    ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
-    mo.humanName = mo.parentName = n;
-    [mo setIvar:1.0];
-    NSCAssert([mo.children count] == 0, nil);
-    return mo;
-}
-
-ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc) {
-    ChildMO *mo = [ChildMO insertInManagedObjectContext:moc];
-    mo.humanName = mo.childName = n;
-    [mo setIvar:1.0];
-    return mo;
-}
 
 NSManagedObjectContext *createManagedObjectContext() {
     NSURL *modelURL = [NSURL fileURLWithPath:@"test.mom"];
@@ -93,6 +58,46 @@ NSManagedObjectContext *createManagedObjectContext() {
     assert(moc);
     
     return moc;
+}
+
+void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc) {
+    ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
+    ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
+    
+    ChildMO *bart = newChildMONamed(@"bart", moc);
+    ChildMO *lisa = newChildMONamed(@"lisa", moc);
+    
+    assertParentMOsCanHaveChildrenAdded(@[homer, marge], @[bart, lisa]);
+}
+
+ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc) {
+    ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
+    mo.humanName = mo.parentName = n;
+    [mo setIvar:1.0];
+    NSCAssert([mo.children count] == 0, nil);
+    return mo;
+}
+
+ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc) {
+    ChildMO *mo = [ChildMO insertInManagedObjectContext:moc];
+    mo.humanName = mo.childName = n;
+    [mo setIvar:1.0];
+    return mo;
+}
+
+void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children) {
+    for (ParentMO *aParent in parents) {
+        for (ChildMO *aChild in children) {
+            [aParent addChildrenObject:aChild];
+        }
+        
+        NSCAssert([aParent.children count] == 2, nil);
+    }
+}
+
+void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc) {
+    ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
+    protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
 }
 
 void assertCanSave(NSManagedObjectContext *moc) {
