@@ -117,6 +117,14 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
 
 
 
+
+
+- (BOOL)shouldOnlyListSourceFiles
+{
+    return _listSourceFiles;
+}
+
+
 - (int)application:(DDCliApplication*)app runWithArguments:(NSArray*)arguments {
     if (_help) {
         [self printUsage];
@@ -140,8 +148,8 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
     NSString * mfilePath = includem;
     NSString * hfilePath = includeh;
     
-    NSMutableString * mfileContent = [NSMutableString stringWithString:@""];
-    NSMutableString * hfileContent = [NSMutableString stringWithString:@""];
+    includeMFileContent = [NSMutableString stringWithString:@""];
+    includeHFileContent = [NSMutableString stringWithString:@""];
     
     [self validateOutputPath:outputDir forType:@"Output"];
     [self validateOutputPath:machineDir forType:@"Machine Output"];
@@ -166,66 +174,38 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
         }
     }
     
-    int machineFilesGenerated = 0;        
-    int humanFilesGenerated = 0;
+    machineFilesGenerated = 0;        
+    humanFilesGenerated = 0;
     
     if (model) {
-        MiscMergeEngine *machineH = engineWithTemplateDesc([self templateDescNamed:@"machine.h.motemplate"]);
+        machineH = engineWithTemplateDesc([self templateDescNamed:@"machine.h.motemplate"]);
         assert(machineH);
-        MiscMergeEngine *machineM = engineWithTemplateDesc([self templateDescNamed:@"machine.m.motemplate"]);
+        machineM = engineWithTemplateDesc([self templateDescNamed:@"machine.m.motemplate"]);
         assert(machineM);
-        MiscMergeEngine *humanH = engineWithTemplateDesc([self templateDescNamed:@"human.h.motemplate"]);
+        humanH = engineWithTemplateDesc([self templateDescNamed:@"human.h.motemplate"]);
         assert(humanH);
-        MiscMergeEngine *humanM = engineWithTemplateDesc([self templateDescNamed:@"human.m.motemplate"]);
+        humanM = engineWithTemplateDesc([self templateDescNamed:@"human.m.motemplate"]);
         assert(humanM);
         
-        // Add the template var dictionary to each of the merge engines
-        [machineH setEngineValue:templateVar forKey:kTemplateVar];
-        [machineM setEngineValue:templateVar forKey:kTemplateVar];
-        [humanH setEngineValue:templateVar forKey:kTemplateVar];
-        [humanM setEngineValue:templateVar forKey:kTemplateVar];
+        [self addTemplateVarDictionaryToMergeEngines];
         
-        NSMutableArray  *humanMFiles = [NSMutableArray array],
-                        *humanHFiles = [NSMutableArray array],
-                        *machineMFiles = [NSMutableArray array],
-                        *machineHFiles = [NSMutableArray array];
+        humanMFiles = [NSMutableArray array],
+                        humanHFiles = [NSMutableArray array],
+                        machineMFiles = [NSMutableArray array],
+                    machineHFiles = [NSMutableArray array];
         
         nsenumerate ([model entitiesWithACustomSubclassInConfiguration:configuration verbose:YES], NSEntityDescription, entity) {
-            NSString *generatedMachineH = [machineH executeWithObject:entity sender:nil];
-            NSString *generatedMachineM = [machineM executeWithObject:entity sender:nil];
             NSString *generatedHumanH = [humanH executeWithObject:entity sender:nil];
             NSString *generatedHumanM = [humanM executeWithObject:entity sender:nil];
             
             NSString *entityClassName = [entity managedObjectClassName];
-            BOOL machineDirtied = NO;
+            machineDirtied = NO;
             
-            // Machine header files.
-            NSString *machineHFileName = [machineDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"_%@.h", entityClassName]];
-            if (_listSourceFiles) {
-                [machineHFiles addObject:machineHFileName];
-            } else {
-                if (![fm regularFileExistsAtPath:machineHFileName] || ![generatedMachineH isEqualToString:[NSString stringWithContentsOfFile:machineHFileName encoding:NSUTF8StringEncoding error:nil]]) {
-                    //  If the file doesn't exist or is different than what we just generated, write it out.
-                    [generatedMachineH writeToFile:machineHFileName atomically:NO encoding:NSUTF8StringEncoding error:nil];
-                    machineDirtied = YES;
-                    machineFilesGenerated++;
-                }
-            }
+            [self generateOrListMachineHFilesForEntity:entity];
+            [self generateOrListMachineMFilesForEntity:entity];
             
-            // Machine source files.
-            NSString *machineMFileName = [machineDir stringByAppendingPathComponent:
-                [NSString stringWithFormat:@"_%@.m", entityClassName]];
-            if (_listSourceFiles) {
-                [machineMFiles addObject:machineMFileName];
-            } else {
-                if (![fm regularFileExistsAtPath:machineMFileName] || ![generatedMachineM isEqualToString:[NSString stringWithContentsOfFile:machineMFileName encoding:NSUTF8StringEncoding error:nil]]) {
-                    //  If the file doesn't exist or is different than what we just generated, write it out.
-                    [generatedMachineM writeToFile:machineMFileName atomically:NO encoding:NSUTF8StringEncoding error:nil];
-                    machineDirtied = YES;
-                    machineFilesGenerated++;
-                }
-            }
+            // expose the temporal coupling through a generateMachineAndHumanFiles()
+            // generate machine via calls. generate human inline.
             
             // Human header files.
             NSString *humanHFileName = [humanDir stringByAppendingPathComponent:
@@ -263,10 +243,10 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
                 }
             }
             
-            [mfileContent appendFormat:@"#import \"%@\"\n#import \"%@\"\n",
-                [humanMFileName lastPathComponent], [machineMFileName lastPathComponent]];
+            [includeMFileContent appendFormat:@"#import \"%@\"\n#import \"%@\"\n",
+                [humanMFileName lastPathComponent], [lastGeneratedMachineMFileName lastPathComponent]];
             
-            [hfileContent appendFormat:@"#import \"%@\"\n", [humanHFileName lastPathComponent]];
+            [includeHFileContent appendFormat:@"#import \"%@\"\n", [humanHFileName lastPathComponent]];
         }
         
         if (_listSourceFiles) {
@@ -283,14 +263,14 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
         [fm removeItemAtPath:tempGeneratedMomFilePath error:nil];
     }
     bool mfileGenerated = NO;
-    if (mfilePath && ![mfileContent isEqualToString:@""] && (![fm regularFileExistsAtPath:mfilePath] || ![[NSString stringWithContentsOfFile:mfilePath encoding:NSUTF8StringEncoding error:nil] isEqualToString:mfileContent])) {
-        [mfileContent writeToFile:mfilePath atomically:NO encoding:NSUTF8StringEncoding error:nil];
+    if (mfilePath && ![includeMFileContent isEqualToString:@""] && (![fm regularFileExistsAtPath:mfilePath] || ![[NSString stringWithContentsOfFile:mfilePath encoding:NSUTF8StringEncoding error:nil] isEqualToString:includeMFileContent])) {
+        [includeMFileContent writeToFile:mfilePath atomically:NO encoding:NSUTF8StringEncoding error:nil];
         mfileGenerated = YES;
     }
 
     bool hfileGenerated = NO;
-    if (hfilePath && ![hfileContent isEqualToString:@""] && (![fm regularFileExistsAtPath:hfilePath] || ![[NSString stringWithContentsOfFile:hfilePath encoding:NSUTF8StringEncoding error:nil] isEqualToString:hfileContent])) {
-        [hfileContent writeToFile:hfilePath atomically:NO encoding:NSUTF8StringEncoding error:nil];
+    if (hfilePath && ![includeHFileContent isEqualToString:@""] && (![fm regularFileExistsAtPath:hfilePath] || ![[NSString stringWithContentsOfFile:hfilePath encoding:NSUTF8StringEncoding error:nil] isEqualToString:includeHFileContent])) {
+        [includeHFileContent writeToFile:hfilePath atomically:NO encoding:NSUTF8StringEncoding error:nil];
         hfileGenerated = YES;
     }
 
@@ -304,6 +284,84 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
     }
     
     return EXIT_SUCCESS;
+}
+
+- (void)generateOrListMachineMFilesForEntity:(NSEntityDescription *)entity
+{
+    if ([self shouldOnlyListSourceFiles]) {
+        [machineMFiles addObject:[self machineMFileNameForEntity:entity]];
+    } else {
+        [self generateMachineMFileForEntity:entity];
+    }
+}
+
+- (NSString *)machineMFileNameForEntity:(NSEntityDescription *)e;
+{
+    return [self machineFileNameWithExtension:@"m" forEntityClassName:[e managedObjectClassName]];
+}
+
+- (NSString *)machineFileNameWithExtension:(NSString *)ext forEntityClassName:(NSString *)ecn
+{
+    return [machineDir stringByAppendingPathComponent:
+            [NSString stringWithFormat:@"_%@.%@", ecn, ext]];
+}
+
+- (void)generateMachineMFileForEntity:(NSEntityDescription *)e
+{
+    NSString *machineMFileName = [self machineMFileNameForEntity:e];
+    NSString *generatedMachineM = [machineM executeWithObject:e sender:nil];
+    
+    [self writeGeneratedMachineContents:generatedMachineM toFileNamedIfNeeded:machineMFileName];
+    lastGeneratedMachineMFileName = machineMFileName;
+}
+
+- (void)generateOrListMachineHFilesForEntity:(NSEntityDescription *)entity
+{
+    if ([self shouldOnlyListSourceFiles]) {
+        [machineHFiles addObject:[self machineHFileNameForEntity:entity]];
+    } else {
+        [self generateMachineHeaderFileForEntity:entity];
+    }
+}
+
+- (NSString *)machineHFileNameForEntity:(NSEntityDescription *)e;
+{
+    return [self machineFileNameWithExtension:@"h" forEntityClassName:[e managedObjectClassName]];
+}
+
+- (void)generateMachineHeaderFileForEntity:(NSEntityDescription *)e
+{
+    NSString *generatedMachineH = [machineH executeWithObject:e sender:nil];
+    NSString *machineHFileName = [self machineHFileNameForEntity:e];
+    
+    [self writeGeneratedMachineContents:generatedMachineH toFileNamedIfNeeded:machineHFileName];
+}
+     
+     - (void)writeGeneratedMachineContents:(NSString *)gen toFileNamedIfNeeded:(NSString *)name
+    {
+        if ([self fileAtPath:name doesntExistOrContentsDifferentThanString:gen]) {
+            [self writeMachineContents:gen toFileNamed:name];
+        }
+    }
+
+- (BOOL)fileAtPath:(NSString *)p doesntExistOrContentsDifferentThanString:(NSString *)s
+{
+    return ![[NSFileManager defaultManager] regularFileExistsAtPath:p] || ![s isEqualToString:[NSString stringWithContentsOfFile:p encoding:NSUTF8StringEncoding error:nil]];
+}
+
+- (void)writeMachineContents:(NSString *)contents toFileNamed:(NSString *)f
+{
+    [contents writeToFile:f atomically:NO encoding:NSUTF8StringEncoding error:nil];
+    machineDirtied = YES;
+    machineFilesGenerated++;
+}
+
+- (void)addTemplateVarDictionaryToMergeEngines
+{
+    [machineH setEngineValue:templateVar forKey:kTemplateVar];
+    [machineM setEngineValue:templateVar forKey:kTemplateVar];
+    [humanH setEngineValue:templateVar forKey:kTemplateVar];
+    [humanM setEngineValue:templateVar forKey:kTemplateVar];
 }
 
 - (int)listFilesWhoseEntitiesNoLongerExist

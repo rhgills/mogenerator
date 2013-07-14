@@ -6,7 +6,7 @@
 #import <Foundation/Foundation.h>
 #import "DDCommandLineInterface.h"
 
-
+@class MiscMergeEngine;
 
 @interface MOGeneratorApp : NSObject <DDCliApplicationDelegate> {
     NSString              *pathToFolderContainingModel;
@@ -28,5 +28,24 @@
     BOOL                  _listSourceFiles;
     BOOL                  _orphaned;
     NSMutableDictionary   *templateVar;
+    
+    MiscMergeEngine *machineH;
+    MiscMergeEngine *machineM;
+    MiscMergeEngine *humanH;
+    MiscMergeEngine *humanM;
+    
+    BOOL machineDirtied;
+    int machineFilesGenerated;
+    int humanFilesGenerated;
+    
+    NSMutableArray *humanHFiles;
+    NSMutableArray *humanMFiles;
+    NSMutableArray *machineHFiles;
+    NSMutableArray *machineMFiles;
+    
+    NSMutableString *includeHFileContent;
+    NSMutableString *includeMFileContent;
+    
+    NSString *lastGeneratedMachineMFileName;
 }
 @end
