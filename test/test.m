@@ -8,6 +8,10 @@
     #define autorelease self
 #endif
 
+ParentMO *newParentMONamed(NSString *n, NSManagedObjectContext *moc);
+NSManagedObjectContext *createManagedObjectContext();
+void assertCanSave(NSManagedObjectContext *moc);
+
 int main(int argc, char *argv[]) {
     @autoreleasepool {
     
@@ -15,13 +19,9 @@ int main(int argc, char *argv[]) {
     
     //--
     
-    ParentMO *homer = [ParentMO insertInManagedObjectContext:moc];
-    homer.humanName = homer.parentName = @"homer";
-    [homer setIvar:1.0];
+        ParentMO *homer = newParentMONamed(@"homer", moc);
     
-    ParentMO *marge = [ParentMO insertInManagedObjectContext:moc];
-    marge.humanName = marge.parentName = @"marge";
-    [marge setIvar:1.0];
+        ParentMO *marge = newParentMONamed(@"marge", moc);
     
     NSCAssert([homer.children count] == 0, nil);
     NSCAssert([marge.children count] == 0, nil);
@@ -66,18 +66,18 @@ int main(int argc, char *argv[]) {
     NSCAssert([marge.children count] == 2, nil);
 #endif
     
-    //--
-    
-    NSError *saveError = nil;
-    BOOL saveSuccess = [moc save:&saveError];
-    assert(saveSuccess);
-    assert(!saveError);
-    
-    //--
+        assertCanSave(moc);
     
     }
     puts("success");
     return 0;
+}
+
+ParentMO *newParentMONamed(NSString *n, NSManagedObjectContext *moc) {
+    ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
+    mo.humanName = mo.parentName = n;
+    [mo setIvar:1.0];
+    return mo;
 }
 
 NSManagedObjectContext *createManagedObjectContext() {
@@ -105,4 +105,11 @@ NSManagedObjectContext *createManagedObjectContext() {
     assert(moc);
     
     return moc;
+}
+
+void assertCanSave(NSManagedObjectContext *moc) {
+    NSError *saveError = nil;
+    BOOL saveSuccess = [moc save:&saveError];
+    assert(saveSuccess);
+    assert(!saveError);
 }
