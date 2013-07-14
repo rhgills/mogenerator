@@ -8,6 +8,9 @@
     #define autorelease self
 #endif
 
+void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc);
+void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc);
+void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children);
 ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
 ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc);
 NSManagedObjectContext *createManagedObjectContext();
@@ -16,43 +19,8 @@ void assertCanSave(NSManagedObjectContext *moc);
 int main(int argc, char *argv[]) {
     @autoreleasepool {
         NSManagedObjectContext *moc = createManagedObjectContext();
-    
-        ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
-        ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
-        
-        ChildMO *bart = newChildMONamed(@"bart", moc);
-        ChildMO *lisa = newChildMONamed(@"lisa", moc);
-
-        ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
-        protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
-
-    #if 0
-        /* Unforunately this section raises the following internal exception on 10.8.0/Xcode 4.5-DP4:
-         2012-08-30 16:01:12.351 test[15090:707] *** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[NSSet intersectsSet:]: set argument is not an NSSet'
-         *** First throw call stack:
-         (
-         0   CoreFoundation                      0x00007fff8c9b1716 __exceptionPreprocess + 198
-         1   libobjc.A.dylib                     0x00007fff94dee470 objc_exception_throw + 43
-         2   CoreFoundation                      0x00007fff8ca4b21f -[NSSet intersectsSet:] + 927
-         3   Foundation                          0x00007fff8e502085 NSKeyValueWillChangeBySetMutation + 359
-         4   Foundation                          0x00007fff8e5549d0 NSKeyValueWillChange + 379
-         5   Foundation                          0x00007fff8e501f0f -[NSObject(NSKeyValueObserverNotification) willChangeValueForKey:withSetMutation:usingObjects:] + 318
-         6   CoreData                            0x00007fff95e697e5 _sharedIMPL_addObjectToSet_core + 165
-         7   test                                0x000000010d44ee6e main + 2606
-         8   libdyld.dylib                       0x00007fff977127e1 start + 0
-         )
-         libc++abi.dylib: terminate called throwing an exception
-         Abort trap: 6
-         */
-        [homer addChildrenObject:bart];
-        [homer addChildrenObject:lisa];
-        [marge addChildrenObject:bart];
-        [marge addChildrenObject:lisa];
-        
-        NSCAssert([homer.children count] == 2, nil);
-        NSCAssert([marge.children count] == 2, nil);
-    #endif
-    
+        testManagedObjectCreationAndPropertiesAndRelationships(moc);
+        testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(moc);
         assertCanSave(moc);
     }
     
@@ -60,8 +28,32 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc)
-{
+void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc) {
+    ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
+    ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
+    
+    ChildMO *bart = newChildMONamed(@"bart", moc);
+    ChildMO *lisa = newChildMONamed(@"lisa", moc);
+    
+    assertParentMOsCanHaveChildrenAdded(@[homer, marge], @[bart, lisa]);
+}
+
+void testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(NSManagedObjectContext *moc) {
+    ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
+    protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
+}
+
+void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children) {
+    for (ParentMO *aParent in parents) {
+        for (ChildMO *aChild in children) {
+            [aParent addChildrenObject:aChild];
+        }
+        
+        NSCAssert([aParent.children count] == 2, nil);
+    }
+}
+
+ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc) {
     ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
     mo.humanName = mo.parentName = n;
     [mo setIvar:1.0];
@@ -69,8 +61,7 @@ ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContex
     return mo;
 }
 
-ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc)
-{
+ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc) {
     ChildMO *mo = [ChildMO insertInManagedObjectContext:moc];
     mo.humanName = mo.childName = n;
     [mo setIvar:1.0];
