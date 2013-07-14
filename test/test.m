@@ -11,31 +11,7 @@
 int main(int argc, char *argv[]) {
     @autoreleasepool {
     
-    NSManagedObjectContext *moc;
-    {{
-        NSURL *modelURL = [NSURL fileURLWithPath:@"test.mom"];
-        assert(modelURL);
-        
-        NSManagedObjectModel *model = [[[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL] autorelease];
-        assert(model);
-        
-        NSPersistentStoreCoordinator *persistentStoreCoordinator = [[[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:model] autorelease];
-        assert(persistentStoreCoordinator);
-        
-        NSError *inMemoryStoreError = nil;
-        NSPersistentStore *persistentStore = [persistentStoreCoordinator addPersistentStoreWithType:NSInMemoryStoreType
-                                                                                      configuration:nil
-                                                                                                URL:nil
-                                                                                            options:nil
-                                                                                              error:&inMemoryStoreError];
-
-        assert(persistentStore);
-        assert(!inMemoryStoreError);
-        
-        moc = [[[NSManagedObjectContext alloc] init] autorelease];
-        [moc setPersistentStoreCoordinator:persistentStoreCoordinator];
-        assert(moc);
-    }}
+    NSManagedObjectContext *moc = createManagedObjectContext();
     
     //--
     
@@ -102,4 +78,31 @@ int main(int argc, char *argv[]) {
     }
     puts("success");
     return 0;
+}
+
+NSManagedObjectContext *createManagedObjectContext() {
+    NSURL *modelURL = [NSURL fileURLWithPath:@"test.mom"];
+    assert(modelURL);
+    
+    NSManagedObjectModel *model = [[[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL] autorelease];
+    assert(model);
+    
+    NSPersistentStoreCoordinator *persistentStoreCoordinator = [[[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:model] autorelease];
+    assert(persistentStoreCoordinator);
+    
+    NSError *inMemoryStoreError = nil;
+    NSPersistentStore *persistentStore = [persistentStoreCoordinator addPersistentStoreWithType:NSInMemoryStoreType
+                                                                                  configuration:nil
+                                                                                            URL:nil
+                                                                                        options:nil
+                                                                                          error:&inMemoryStoreError];
+    
+    assert(persistentStore);
+    assert(!inMemoryStoreError);
+    
+    NSManagedObjectContext *moc = [[[NSManagedObjectContext alloc] init] autorelease];
+    [moc setPersistentStoreCoordinator:persistentStoreCoordinator];
+    assert(moc);
+    
+    return moc;
 }
