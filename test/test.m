@@ -2,7 +2,7 @@
 #import "MyBaseClass.h"
 #import "MOs/ParentMO.h"
 #import "MOs/ChildMO.h"
-#import "TestProtocol.h"
+#import "MyProtocolImpl.h"
 
 #if __has_feature(objc_arc)
     #define autorelease self
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     [lisa setIvar:1.0];
 
     ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
-    protocolMO.myTransformableWithProtocol = [TestProtocol new];
+    protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
 
 #if 0
     /* Unforunately this section raises the following internal exception on 10.8.0/Xcode 4.5-DP4:

@@ -2,5 +2,5 @@
 #import "MyProtocol.h"
 
 
-@interface TestProtocol : NSObject <MyProtocol>
+@interface MyProtocolImpl : NSObject <MyProtocol>
 @end
