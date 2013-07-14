@@ -289,9 +289,9 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
 - (void)generateOrListMachineMFilesForEntity:(NSEntityDescription *)entity
 {
     if ([self shouldOnlyListSourceFiles]) {
-        [machineMFiles addObject:[self machineMFileNameForEntity:entity]];
+        [machineMFiles addObject:[self machineMFileNameForEntity:entity]]; // to template
     } else {
-        [self generateMachineMFileForEntity:entity];
+        [self generateMachineMFileForEntity:entity]; // to template
     }
 }
 
@@ -337,12 +337,12 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
     [self writeGeneratedMachineContents:generatedMachineH toFileNamedIfNeeded:machineHFileName];
 }
      
-     - (void)writeGeneratedMachineContents:(NSString *)gen toFileNamedIfNeeded:(NSString *)name
-    {
-        if ([self fileAtPath:name doesntExistOrContentsDifferentThanString:gen]) {
-            [self writeMachineContents:gen toFileNamed:name];
-        }
+- (void)writeGeneratedMachineContents:(NSString *)gen toFileNamedIfNeeded:(NSString *)name
+{
+    if ([self fileAtPath:name doesntExistOrContentsDifferentThanString:gen]) {
+        [self writeMachineContents:gen toFileNamed:name];
     }
+}
 
 - (BOOL)fileAtPath:(NSString *)p doesntExistOrContentsDifferentThanString:(NSString *)s
 {
