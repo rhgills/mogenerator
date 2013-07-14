@@ -9,7 +9,7 @@
 #endif
 
 NSManagedObjectContext *createManagedObjectContext();
-void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc);
+void testManagedObjectCreationAndPropertyAndRelationship(NSManagedObjectContext *moc);
 ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
 ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc);
 void assertParentMOsCanHaveChildrenAdded(NSArray *parents, NSArray *children);
@@ -21,7 +21,7 @@ void assertCanSave(NSManagedObjectContext *moc);
 int main(int argc, char *argv[]) {
     @autoreleasepool {
         NSManagedObjectContext *moc = createManagedObjectContext();
-        testManagedObjectCreationAndPropertiesAndRelationships(moc);
+        testManagedObjectCreationAndPropertyAndRelationship(moc);
         testCanSetAProtocolImplOnAPropertyConformingToTheProtocol(moc);
         assertCanSave(moc);
     }
@@ -60,7 +60,7 @@ NSManagedObjectContext *createManagedObjectContext() {
     return moc;
 }
 
-void testManagedObjectCreationAndPropertiesAndRelationships(NSManagedObjectContext *moc) {
+void testManagedObjectCreationAndPropertyAndRelationship(NSManagedObjectContext *moc) {
     ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
     ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
     
