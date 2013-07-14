@@ -82,6 +82,7 @@ def build_mogen
   run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator clean' # need this to pick up template changes
   run_or_die 'xcodebuild -project ../mogenerator.xcodeproj -scheme mogenerator'
   @mogenPath = "#{built_products_dir}/mogenerator"
+  puts "*** mogenerator built in #{built_products_dir}"
 end
 
 def mogenPath
@@ -92,12 +93,28 @@ def gen_and_compile(desc, mogenPath, extra_mogen_args, extra_gcc_args)
   puts "*** Testing #{desc}"
   ENV['MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS'] = '1'
   run_mogen(mogenPath, extra_mogen_args)
-  run_or_die 'cp HumanMO.h HumanMO.m MyProtocol.h MyProtocolImpl.m MOs'
-  run_or_die "clang -o testbin test.m MyBaseClass.m MOs/*.m -I#{Dir.pwd} -framework Foundation -framework Cocoa -framework CoreData #{extra_gcc_args}"
-  run_or_die "xcrun momc -MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS test.xcdatamodel #{Dir.pwd}/test.mom"
-  puts run_or_die './testbin'
+  copy_human_files_into_MOs
+  build_test_app(extra_gcc_args)
+  compile_xcdatamodel
+  run_test_app
 end
 
 def run_mogen(mogenPath, extra_mogen_args)
   run_or_die "#{mogenPath.gsub(/ /, '\\ ')} --model test.xcdatamodel --output MOs --baseClass MyBaseClass #{extra_mogen_args}"
+end
+
+def copy_human_files_into_MOs
+  run_or_die 'cp HumanMO.h HumanMO.m MyProtocol.h MyProtocolImpl.m MOs'
+end
+
+def build_test_app(extra_gcc_args)
+  run_or_die "clang -o testbin test.m MyBaseClass.m MOs/*.m -I#{Dir.pwd} -framework Foundation -framework Cocoa -framework CoreData #{extra_gcc_args}"
+end
+
+def compile_xcdatamodel
+  run_or_die "xcrun momc -MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS test.xcdatamodel #{Dir.pwd}/test.mom"
+end
+
+def run_test_app
+  puts run_or_die './testbin'
 end
