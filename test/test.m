@@ -8,74 +8,71 @@
     #define autorelease self
 #endif
 
-ParentMO *newParentMONamed(NSString *n, NSManagedObjectContext *moc);
+ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc);
+ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc);
 NSManagedObjectContext *createManagedObjectContext();
 void assertCanSave(NSManagedObjectContext *moc);
 
 int main(int argc, char *argv[]) {
     @autoreleasepool {
+        NSManagedObjectContext *moc = createManagedObjectContext();
     
-    NSManagedObjectContext *moc = createManagedObjectContext();
-    
-    //--
-    
-        ParentMO *homer = newParentMONamed(@"homer", moc);
-    
-        ParentMO *marge = newParentMONamed(@"marge", moc);
-    
-    NSCAssert([homer.children count] == 0, nil);
-    NSCAssert([marge.children count] == 0, nil);
-    
-    //--
-    
-    ChildMO *bart = [ChildMO insertInManagedObjectContext:moc];
-    bart.humanName = bart.childName = @"bart";
-    [bart setIvar:1.0];
-    
-    ChildMO *lisa = [ChildMO insertInManagedObjectContext:moc];
-    lisa.humanName = lisa.childName = @"lisa";
-    [lisa setIvar:1.0];
+        ParentMO *homer = newParentMONamedAndAssertNoChildren(@"homer", moc);
+        ParentMO *marge = newParentMONamedAndAssertNoChildren(@"marge", moc);
+        
+        ChildMO *bart = newChildMONamed(@"bart", moc);
+        ChildMO *lisa = newChildMONamed(@"lisa", moc);
 
-    ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
-    protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
+        ParentMO *protocolMO = [ParentMO insertInManagedObjectContext:moc];
+        protocolMO.myTransformableWithProtocol = [MyProtocolImpl new];
 
-#if 0
-    /* Unforunately this section raises the following internal exception on 10.8.0/Xcode 4.5-DP4:
-     2012-08-30 16:01:12.351 test[15090:707] *** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[NSSet intersectsSet:]: set argument is not an NSSet'
-     *** First throw call stack:
-     (
-     0   CoreFoundation                      0x00007fff8c9b1716 __exceptionPreprocess + 198
-     1   libobjc.A.dylib                     0x00007fff94dee470 objc_exception_throw + 43
-     2   CoreFoundation                      0x00007fff8ca4b21f -[NSSet intersectsSet:] + 927
-     3   Foundation                          0x00007fff8e502085 NSKeyValueWillChangeBySetMutation + 359
-     4   Foundation                          0x00007fff8e5549d0 NSKeyValueWillChange + 379
-     5   Foundation                          0x00007fff8e501f0f -[NSObject(NSKeyValueObserverNotification) willChangeValueForKey:withSetMutation:usingObjects:] + 318
-     6   CoreData                            0x00007fff95e697e5 _sharedIMPL_addObjectToSet_core + 165
-     7   test                                0x000000010d44ee6e main + 2606
-     8   libdyld.dylib                       0x00007fff977127e1 start + 0
-     )
-     libc++abi.dylib: terminate called throwing an exception
-     Abort trap: 6
-     */
-    [homer addChildrenObject:bart];
-    [homer addChildrenObject:lisa];
-    [marge addChildrenObject:bart];
-    [marge addChildrenObject:lisa];
-    
-    NSCAssert([homer.children count] == 2, nil);
-    NSCAssert([marge.children count] == 2, nil);
-#endif
+    #if 0
+        /* Unforunately this section raises the following internal exception on 10.8.0/Xcode 4.5-DP4:
+         2012-08-30 16:01:12.351 test[15090:707] *** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '*** -[NSSet intersectsSet:]: set argument is not an NSSet'
+         *** First throw call stack:
+         (
+         0   CoreFoundation                      0x00007fff8c9b1716 __exceptionPreprocess + 198
+         1   libobjc.A.dylib                     0x00007fff94dee470 objc_exception_throw + 43
+         2   CoreFoundation                      0x00007fff8ca4b21f -[NSSet intersectsSet:] + 927
+         3   Foundation                          0x00007fff8e502085 NSKeyValueWillChangeBySetMutation + 359
+         4   Foundation                          0x00007fff8e5549d0 NSKeyValueWillChange + 379
+         5   Foundation                          0x00007fff8e501f0f -[NSObject(NSKeyValueObserverNotification) willChangeValueForKey:withSetMutation:usingObjects:] + 318
+         6   CoreData                            0x00007fff95e697e5 _sharedIMPL_addObjectToSet_core + 165
+         7   test                                0x000000010d44ee6e main + 2606
+         8   libdyld.dylib                       0x00007fff977127e1 start + 0
+         )
+         libc++abi.dylib: terminate called throwing an exception
+         Abort trap: 6
+         */
+        [homer addChildrenObject:bart];
+        [homer addChildrenObject:lisa];
+        [marge addChildrenObject:bart];
+        [marge addChildrenObject:lisa];
+        
+        NSCAssert([homer.children count] == 2, nil);
+        NSCAssert([marge.children count] == 2, nil);
+    #endif
     
         assertCanSave(moc);
-    
     }
+    
     puts("success");
     return 0;
 }
 
-ParentMO *newParentMONamed(NSString *n, NSManagedObjectContext *moc) {
+ParentMO *newParentMONamedAndAssertNoChildren(NSString *n, NSManagedObjectContext *moc)
+{
     ParentMO *mo = [ParentMO insertInManagedObjectContext:moc];
     mo.humanName = mo.parentName = n;
+    [mo setIvar:1.0];
+    NSCAssert([mo.children count] == 0, nil);
+    return mo;
+}
+
+ChildMO *newChildMONamed(NSString *n, NSManagedObjectContext *moc)
+{
+    ChildMO *mo = [ChildMO insertInManagedObjectContext:moc];
+    mo.humanName = mo.childName = n;
     [mo setIvar:1.0];
     return mo;
 }
