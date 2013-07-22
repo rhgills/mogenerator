@@ -1,8 +1,17 @@
+desc 'Test all configurations'
 task :default do
   clean
   build_mogen
   
   test_all
+end
+
+desc "Test all configurations of contributed template: 'Robert Gilliam'"
+task :test_robert_gilliam do
+  clean
+  build_mogen
+
+  test_all(template_robert_gilliam)
 end
 
 desc 'Clean output'
@@ -21,17 +30,17 @@ def run_or_die(cmd)
   result
 end
 
-def test_all
-  test_mrc
+def test_all(template = '')
+  test_mrc(template)
   clean
   
-  test_mrc_noliterals
+  test_mrc_noliterals(template)
   clean
   
-  test_arc
+  test_arc(template)
   clean
   
-  test_arc_noliterals
+  test_arc_noliterals(template)
   clean
 end
 
@@ -40,8 +49,8 @@ task :mrc => :build_mogen do
   test_mrc
 end
 
-def test_mrc
-  gen_and_compile('MRC (with objc literals)', mogenPath, '', '')
+def test_mrc(args_to_select_template = '')
+  test('MRC (with objc literals)', '#{args_to_select_template}', '')
 end
 
 desc 'Generate, Compile and Run MRC Code (without objc literals)'
@@ -49,8 +58,8 @@ task :mrc_noliterals => :build_mogen  do
   test_mrc_noliterals
 end
 
-def test_mrc_noliterals
-  gen_and_compile('MRC (without objc literals)', mogenPath, '--template-var noliterals=true', '')
+def test_mrc_noliterals(args_to_select_template = '')
+  test('MRC (without objc literals)', '--template-var noliterals=true #{args_to_select_template}', '')
 end
 
 desc 'Generate, Compile and Run ARC Code (with objc literals)'
@@ -58,8 +67,8 @@ task :arc => :build_mogen  do
   test_arc
 end
 
-def test_arc
-  gen_and_compile('ARC (with objc literals)', mogenPath, '--template-var arc=true', '-fobjc-arc')
+def test_arc(args_to_select_template = '')
+  test('ARC (with objc literals)', '--template-var arc=true #{args_to_select_template}', '-fobjc-arc')
 end
 
 desc 'Generate, Compile and Run ARC Code (without objc literals)'
@@ -67,8 +76,8 @@ task :arc_noliterals => :build_mogen  do
   test_arc_noliterals
 end
 
-def test_arc_noliterals
-  gen_and_compile('ARC (without objc literals)', mogenPath, '--template-var arc=true --template-var noliterals=true', '-fobjc-arc')
+def test_arc_noliterals(args_to_select_template = '')
+  test('ARC (without objc literals)', '--template-var arc=true --template-var noliterals=true #{args_to_select_template}', '-fobjc-arc')
 end
 
 task :build_mogen do
@@ -89,17 +98,17 @@ def mogenPath
   @mogenPath
 end
 
-def gen_and_compile(desc, mogenPath, extra_mogen_args, extra_gcc_args)
+def test(desc, extra_mogen_args, extra_gcc_args)
   puts "*** Testing #{desc}"
   ENV['MOMC_NO_INVERSE_RELATIONSHIP_WARNINGS'] = '1'
-  run_mogen(mogenPath, extra_mogen_args)
+  run_mogen(extra_mogen_args)
   copy_human_files_into_MOs
   build_test_app(extra_gcc_args)
   compile_xcdatamodel
   run_test_app
 end
 
-def run_mogen(mogenPath, extra_mogen_args)
+def run_mogen(extra_mogen_args)
   run_or_die "#{mogenPath.gsub(/ /, '\\ ')} --model test.xcdatamodel --output MOs --baseClass MyBaseClass #{extra_mogen_args}"
 end
 
@@ -117,4 +126,8 @@ end
 
 def run_test_app
   puts run_or_die './testbin'
+end
+
+def template_robert_gilliam
+  "--template-path '/Users/rhgill/Code/mogenerator/contributed templates/Robert Gilliam/'"
 end

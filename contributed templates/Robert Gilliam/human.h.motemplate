@@ -1,0 +1,9 @@
+#import "_<$managedObjectClassName$>.h"
+
+@protocol <$managedObjectClassName$> <_<$managedObjectClassName$>, NSObject>
+// Custom logic goes here.
+@end
+
+@interface <$managedObjectClassName$> : _<$managedObjectClassName$> <_<$managedObjectClassName$>> {}
+
+@end

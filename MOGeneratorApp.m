@@ -39,7 +39,6 @@ static MiscMergeEngine* engineWithTemplateDesc(MogeneratorTemplateDescription *t
 
 
 
-
 @implementation MOGeneratorApp
 
 - (id)init {
